@@ -25,6 +25,14 @@ export class AttendanceService {
     return attendanceRepository.findByEmployee(employeeId);
   }
 
+  public async getTodayAttendances(): Promise<Attendance[]> {
+    return attendanceRepository.findToday();
+  }
+
+  public async getEmployeeTodayAttendances(employeeId: number): Promise<Attendance[]> {
+    return attendanceRepository.findTodayByEmployee(employeeId);
+  }
+
   public async record(
     data: Omit<CreateAttendanceDTO, "timestamp"> & { timestamp?: Date }
   ): Promise<Attendance> {
@@ -38,15 +46,48 @@ export class AttendanceService {
 
     const timestamp = data.timestamp || new Date();
 
+    if (data.type === AttendanceType.ENTRADA) {
+      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employee_id);
+      if (lastRecordToday && lastRecordToday.type === AttendanceType.ENTRADA) {
+        throw new Error("Ya existe una entrada sin cerrar. Registra la salida primero.");
+      }
+    }
+
     if (data.type === AttendanceType.SALIDA) {
-      const lastRecord = await attendanceRepository.findLastByEmployee(data.employee_id);
-      if (!lastRecord || lastRecord.type === AttendanceType.SALIDA) {
+      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employee_id);
+      if (!lastRecordToday || lastRecordToday.type === AttendanceType.SALIDA) {
         throw new Error("No se puede registrar SALIDA sin una ENTRADA previa");
       }
     }
 
     return attendanceRepository.create({
       ...data,
+      timestamp,
+    });
+  }
+
+  public async recordEntry(
+    employeeId: number,
+    recordedBy: number,
+    timestamp?: Date
+  ): Promise<Attendance> {
+    return this.record({
+      employee_id: employeeId,
+      recorded_by: recordedBy,
+      type: AttendanceType.ENTRADA,
+      timestamp,
+    });
+  }
+
+  public async recordExit(
+    employeeId: number,
+    recordedBy: number,
+    timestamp?: Date
+  ): Promise<Attendance> {
+    return this.record({
+      employee_id: employeeId,
+      recorded_by: recordedBy,
+      type: AttendanceType.SALIDA,
       timestamp,
     });
   }

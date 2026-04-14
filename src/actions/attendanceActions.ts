@@ -40,6 +40,24 @@ export async function getEmployeeAttendances(employeeId: number) {
   }
 }
 
+export async function getTodayAttendances() {
+  try {
+    const attendances = await attendanceService.getTodayAttendances();
+    return { success: true, data: attendances };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getEmployeeTodayAttendances(employeeId: number) {
+  try {
+    const attendances = await attendanceService.getEmployeeTodayAttendances(employeeId);
+    return { success: true, data: attendances };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
 export async function recordAttendance(data: RecordAttendanceParams) {
   try {
     const attendance = await attendanceService.record(data);

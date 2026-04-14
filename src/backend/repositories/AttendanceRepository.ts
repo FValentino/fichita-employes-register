@@ -1,4 +1,4 @@
-import { Repository, IsNull } from "typeorm";
+import { Repository, MoreThanOrEqual, LessThan, Between } from "typeorm";
 import { Attendance, AttendanceType } from "../models";
 import { AppDataSource } from "../datasource";
 
@@ -46,9 +46,84 @@ class AttendanceRepository {
     });
   }
 
+  public async findByEmployeeAndDate(
+    employeeId: number,
+    date: Date
+  ): Promise<Attendance[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.repository.find({
+      where: {
+        employee_id: employeeId,
+        timestamp: Between(startOfDay, endOfDay),
+      },
+      relations: ["employee", "recordedBy"],
+      order: { timestamp: "ASC" },
+    });
+  }
+
+  public async findTodayByEmployee(employeeId: number): Promise<Attendance[]> {
+    return this.findByEmployeeAndDate(employeeId, new Date());
+  }
+
+  public async findToday(): Promise<Attendance[]> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.repository.find({
+      where: {
+        timestamp: Between(startOfDay, endOfDay),
+      },
+      relations: ["employee", "recordedBy"],
+      order: { timestamp: "ASC" },
+    });
+  }
+
+  public async hasEntryToday(employeeId: number): Promise<boolean> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const entry = await this.repository.findOne({
+      where: {
+        employee_id: employeeId,
+        type: AttendanceType.ENTRADA,
+        timestamp: Between(startOfDay, endOfDay),
+      },
+    });
+
+    return entry !== null;
+  }
+
   public async findLastByEmployee(employeeId: number): Promise<Attendance | null> {
     return this.repository.findOne({
       where: { employee_id: employeeId },
+      relations: ["employee", "recordedBy"],
+      order: { timestamp: "DESC" },
+    });
+  }
+
+  public async findLastByEmployeeToday(employeeId: number): Promise<Attendance | null> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return this.repository.findOne({
+      where: {
+        employee_id: employeeId,
+        timestamp: Between(startOfDay, endOfDay),
+      },
       relations: ["employee", "recordedBy"],
       order: { timestamp: "DESC" },
     });

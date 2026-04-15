@@ -1,1 +1,1 @@
-export type { EmployeeDTO, CreateEmployeeDTO, UpdateEmployeeDTO } from "./employees";
+export type { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from "./employees";

@@ -1,7 +1,18 @@
 "use server";
 
 import { employeeService } from "@/backend/services";
-import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/repositories";
+import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
+
+function toPlainAttendance(attendance: any) {
+  return {
+    id: attendance.id,
+    employeeId: attendance.employee_id,
+    recordedBy: attendance.recorded_by,
+    type: attendance.type,
+    timestamp: attendance.timestamp,
+    createdAt: attendance.created_at,
+  };
+}
 
 function toPlainEmployee(employee: any) {
   return {
@@ -24,8 +35,8 @@ function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
 
   return {
     ...data,
-    name: capitalize(data.name),
-    lastName: data.lastName.toUpperCase().trim(),
+    name: data.name ? capitalize(data.name) : undefined,
+    lastName: data.lastName ? data.lastName.toUpperCase().trim() : undefined,
   };
 }
 
@@ -63,7 +74,7 @@ export async function getActiveEmployees() {
 
 export async function createEmployee(data: CreateEmployeeDTO) {
   try {
-    const formattedData = formatEmployeeData(data);
+    const formattedData = formatEmployeeData(data) as CreateEmployeeDTO;
     const employee = await employeeService.create(formattedData);
     return { success: true, data: toPlainEmployee(employee) };
   } catch (error) {
@@ -73,7 +84,7 @@ export async function createEmployee(data: CreateEmployeeDTO) {
 
 export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
   try {
-    const formattedData = formatEmployeeData(data);
+    const formattedData = formatEmployeeData(data) as UpdateEmployeeDTO;
     const employee = await employeeService.update(id, formattedData);
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
@@ -88,6 +99,172 @@ export async function deleteEmployee(id: number) {
   try {
     const deleted = await employeeService.delete(id);
     return { success: deleted };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export interface EmployeeWithTurns {
+  id: number;
+  name: string;
+  lastName: string;
+  hourlyRate: number;
+  weeklyHours: number;
+  turns: Array<{
+    id: number;
+    entryTime: Date | null;
+    exitTime: Date | null;
+    isOpen: boolean;
+  }>;
+  totalHours: number;
+  weeklySalary: number;
+}
+
+export async function getEmployeesWithWeeklyTurns() {
+  try {
+    const employees = await employeeService.getActive();
+    const result: EmployeeWithTurns[] = [];
+
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const { attendanceService } = await import("@/backend/services");
+
+    for (const emp of employees) {
+      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, monday, sunday);
+      const plainAttendances = attendances.map(toPlainAttendance);
+      
+      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
+      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+
+      const turns: Array<{
+        id: number;
+        entryTime: Date | null;
+        exitTime: Date | null;
+        isOpen: boolean;
+      }> = [];
+
+      entries.forEach((entry: any, index: number) => {
+        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+        turns.push({
+          id: index,
+          entryTime: entry.timestamp,
+          exitTime: exit ? exit.timestamp : null,
+          isOpen: !exit,
+        });
+      });
+
+      let totalMinutes = 0;
+      for (const turn of turns) {
+        if (turn.entryTime && turn.exitTime) {
+          const entry = new Date(turn.entryTime).getTime();
+          const exit = new Date(turn.exitTime).getTime();
+          totalMinutes += (exit - entry) / (1000 * 60);
+        }
+      }
+
+      const totalHours = totalMinutes / 60;
+      const weeklySalary = totalHours * Number(emp.hourlyRate);
+
+      result.push({
+        id: emp.id,
+        name: emp.name,
+        lastName: emp.lastName,
+        hourlyRate: Number(emp.hourlyRate),
+        weeklyHours: Number(emp.weeklyHours),
+        turns,
+        totalHours,
+        weeklySalary,
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        employees: result,
+        weekStart: monday.toISOString(),
+        weekEnd: sunday.toISOString(),
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getEmployeesWithMonthlyTurns() {
+  try {
+    const employees = await employeeService.getActive();
+    const result: EmployeeWithTurns[] = [];
+
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const { attendanceService } = await import("@/backend/services");
+
+    for (const emp of employees) {
+      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);
+      const plainAttendances = attendances.map(toPlainAttendance);
+      
+      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
+      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+
+      const turns: Array<{
+        id: number;
+        entryTime: Date | null;
+        exitTime: Date | null;
+        isOpen: boolean;
+      }> = [];
+
+      entries.forEach((entry: any, index: number) => {
+        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+        turns.push({
+          id: index,
+          entryTime: entry.timestamp,
+          exitTime: exit ? exit.timestamp : null,
+          isOpen: !exit,
+        });
+      });
+
+      let totalMinutes = 0;
+      for (const turn of turns) {
+        if (turn.entryTime && turn.exitTime) {
+          const entry = new Date(turn.entryTime).getTime();
+          const exit = new Date(turn.exitTime).getTime();
+          totalMinutes += (exit - entry) / (1000 * 60);
+        }
+      }
+
+      const totalHours = totalMinutes / 60;
+      const weeklySalary = totalHours * Number(emp.hourlyRate);
+
+      result.push({
+        id: emp.id,
+        name: emp.name,
+        lastName: emp.lastName,
+        hourlyRate: Number(emp.hourlyRate),
+        weeklyHours: Number(emp.weeklyHours),
+        turns,
+        totalHours,
+        weeklySalary,
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        employees: result,
+        monthStart: firstDay.toISOString(),
+        monthEnd: lastDay.toISOString(),
+      }
+    };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }

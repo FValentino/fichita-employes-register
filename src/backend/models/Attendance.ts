@@ -15,31 +15,31 @@ export enum AttendanceType {
 @Entity("attendance")
 export class Attendance {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  employee_id: number;
+  employee_id!: number;
 
   @Column({ nullable: true })
-  recorded_by: number | null;
+  recorded_by!: number | null;
 
   @Column({
     type: "enum",
     enum: AttendanceType,
   })
-  type: AttendanceType;
+  type!: AttendanceType;
 
   @Column({ type: "timestamptz" })
-  timestamp: Date;
+  timestamp!: Date;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @ManyToOne("Employee", "attendances")
   @JoinColumn({ name: "employee_id" })
-  employee: any;
+  employee!: any;
 
   @ManyToOne("User", "attendances", { nullable: true })
   @JoinColumn({ name: "recorded_by" })
-  recordedBy: any;
+  recordedBy!: any;
 }

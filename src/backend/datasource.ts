@@ -10,6 +10,7 @@ dotenv.config();
 class Database {
   private static instance: Database | null = null;
   private dataSource: DataSource;
+  private initPromise: Promise<void> | null = null;
 
   private constructor() {
     this.dataSource = new DataSource({
@@ -21,6 +22,7 @@ class Database {
       migrations: [],
       subscribers: [],
     });
+    this.initPromise = this.initialize();
   }
 
   public static getInstance(): Database {
@@ -39,10 +41,16 @@ class Database {
       await this.dataSource.initialize();
     }
   }
+
+  public async waitForInit(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+  }
 }
 
 const dbInstance = Database.getInstance();
-dbInstance.initialize();
 
 export const AppDataSource = dbInstance.getDataSource();
 export const db = dbInstance;
+export const waitForDb = () => dbInstance.waitForInit();

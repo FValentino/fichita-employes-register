@@ -10,29 +10,29 @@ import {
 @Entity("employees")
 export class Employee {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column()
-  lastName: string;
+  lastName!: string;
 
   @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
-  hourlyRate: number;
+  hourlyRate!: number;
 
   @Column({ type: "decimal", precision: 10, scale: 2, default: 0 })
-  weeklyHours: number;
+  weeklyHours!: number;
 
   @Column({ default: true })
-  active: boolean;
+  active!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @OneToMany("Attendance", "employee")
-  attendances: any[];
+  attendances!: any[];
 }

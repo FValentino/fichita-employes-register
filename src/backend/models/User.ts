@@ -15,30 +15,30 @@ export enum UserRole {
 @Entity("users")
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({
     type: "enum",
     enum: UserRole,
     default: UserRole.ENCARGADO,
   })
-  role: UserRole;
+  role!: UserRole;
 
   @CreateDateColumn()
-  created_at: Date;
+  created_at!: Date;
 
   @UpdateDateColumn()
-  updated_at: Date;
+  updated_at!: Date;
 
   @OneToMany("Attendance", "recordedBy")
-  attendances: any[];
+  attendances!: any[];
 }

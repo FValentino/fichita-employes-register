@@ -12,6 +12,7 @@ interface Employee {
   name: string;
   lastName: string;
   hourlyRate: number;
+  weeklyHours: number;
 }
 
 interface EmployeeWithAttendanceProps {
@@ -96,7 +97,7 @@ export function EmployeeWithAttendance({ employee }: EmployeeWithAttendanceProps
       </tr>
 
       {showEdit && (
-        <EditEmployeeButton employee={employee} isOpen={showEdit} onClose={() => setShowEdit(false)} />
+        <EditEmployeeButton employee={employee} />
       )}
 
       <AttendanceHistory

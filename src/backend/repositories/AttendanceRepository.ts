@@ -4,7 +4,7 @@ import { AppDataSource } from "../datasource";
 
 export interface CreateAttendanceDTO {
   employee_id: number;
-  recorded_by: number;
+  recorded_by?: number | null;
   type: AttendanceType;
   timestamp: Date;
 }

@@ -20,8 +20,8 @@ export class Attendance {
   @Column()
   employee_id: number;
 
-  @Column()
-  recorded_by: number;
+  @Column({ nullable: true })
+  recorded_by: number | null;
 
   @Column({
     type: "enum",
@@ -39,7 +39,7 @@ export class Attendance {
   @JoinColumn({ name: "employee_id" })
   employee: any;
 
-  @ManyToOne("User", "attendances")
+  @ManyToOne("User", "attendances", { nullable: true })
   @JoinColumn({ name: "recorded_by" })
   recordedBy: any;
 }

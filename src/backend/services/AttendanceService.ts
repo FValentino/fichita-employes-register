@@ -1,5 +1,5 @@
 import { Attendance, AttendanceType } from "../models";
-import { attendanceRepository, employeeRepository, CreateAttendanceDTO } from "../repositories";
+import { attendanceRepository, employeeRepository, CreateAttendanceDTO, AttendanceFilters, PaginatedResult } from "../repositories";
 
 export class AttendanceService {
   private static instance: AttendanceService | null = null;
@@ -90,6 +90,14 @@ export class AttendanceService {
       type: AttendanceType.SALIDA,
       timestamp,
     });
+  }
+
+  public async getPaginated(
+    filters: AttendanceFilters,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<PaginatedResult<Attendance>> {
+    return attendanceRepository.findWithFilters(filters, page, limit);
   }
 }
 

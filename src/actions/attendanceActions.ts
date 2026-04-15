@@ -82,3 +82,28 @@ export async function recordExit(employeeId: number, recordedBy: number) {
     type: AttendanceType.SALIDA,
   });
 }
+
+export interface AttendanceQueryFilters {
+  employeeId?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export async function getAttendanceReport(
+  filters: AttendanceQueryFilters = {},
+  page: number = 1,
+  limit: number = 10
+) {
+  try {
+    const parsedFilters = {
+      employeeId: filters.employeeId,
+      startDate: filters.startDate ? new Date(filters.startDate) : undefined,
+      endDate: filters.endDate ? new Date(filters.endDate) : undefined,
+    };
+
+    const result = await attendanceService.getPaginated(parsedFilters, page, limit);
+    return { success: true, data: result };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}

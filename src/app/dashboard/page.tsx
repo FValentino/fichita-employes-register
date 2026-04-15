@@ -1,6 +1,39 @@
 import { theme } from "@/lib/theme";
+import { getDashboardStats } from "@/actions";
 
-export default function DashboardPage() {
+function StatCard({ title, value, color }: { title: string; value: number; color: string }) {
+  return (
+    <div
+      style={{
+        backgroundColor: theme.colors.white,
+        padding: "24px",
+        borderRadius: "12px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+      }}
+    >
+      <h3 style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
+        {title}
+      </h3>
+      <p style={{ fontSize: "32px", fontWeight: "bold", color, margin: "8px 0 0 0" }}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export default async function DashboardPage() {
+  const result = await getDashboardStats();
+
+  const defaultStats = {
+    totalEmployees: 0,
+    workingEmployees: 0,
+    entriesToday: 0,
+    exitsToday: 0,
+    tardanzasSemanales: 0,
+  };
+
+  const stats = result.success ? result.data ?? defaultStats : defaultStats;
+
   return (
     <div>
       <h2 style={{ color: theme.colors.neutral, marginBottom: "24px" }}>
@@ -11,74 +44,47 @@ export default function DashboardPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(2, 1fr)",
             gap: "16px",
           }}
         >
-          <div
-            style={{
-              backgroundColor: theme.colors.white,
-              padding: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
-              Empleados Activos
-            </h3>
-            <p style={{ fontSize: "32px", fontWeight: "bold", color: theme.colors.neutral, margin: "8px 0 0 0" }}>
-              0
-            </p>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: theme.colors.white,
-              padding: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
-              Entradas Hoy
-            </h3>
-            <p style={{ fontSize: "32px", fontWeight: "bold", color: theme.colors.primary, margin: "8px 0 0 0" }}>
-              0
-            </p>
-          </div>
-
-          <div
-            style={{
-              backgroundColor: theme.colors.white,
-              padding: "24px",
-              borderRadius: "12px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
-          >
-            <h3 style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
-              Salidas Hoy
-            </h3>
-            <p style={{ fontSize: "32px", fontWeight: "bold", color: theme.colors.secondary, margin: "8px 0 0 0" }}>
-              0
-            </p>
-          </div>
+          <StatCard
+            title="Empleados Registrados"
+            value={stats.totalEmployees}
+            color={theme.colors.neutral}
+          />
+          <StatCard
+            title="Empleados Trabajando"
+            value={stats.workingEmployees}
+            color={theme.colors.neutral}
+          />
         </div>
 
         <div
           style={{
-            backgroundColor: theme.colors.white,
-            padding: "24px",
-            borderRadius: "12px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            maxWidth: "calc(33.33% - 11px)",
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: "16px",
           }}
         >
-          <h3 style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
-            Tardanzas Semanales
-          </h3>
-          <p style={{ fontSize: "32px", fontWeight: "bold", color: theme.colors.tertiary, margin: "8px 0 0 0" }}>
-            0
-          </p>
+          <StatCard
+            title="Entradas Hoy"
+            value={stats.entriesToday}
+            color={theme.colors.primary}
+          />
+          <StatCard
+            title="Salidas Hoy"
+            value={stats.exitsToday}
+            color={theme.colors.secondary}
+          />
+        </div>
+
+        <div style={{ maxWidth: "50%" }}>
+          <StatCard
+            title="Tardanzas Semanales"
+            value={0}
+            color={theme.colors.tertiary}
+          />
         </div>
       </div>
     </div>

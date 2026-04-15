@@ -195,6 +195,16 @@ class AttendanceRepository {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  public async findWeekEntries(startDate: Date, endDate: Date): Promise<Attendance[]> {
+    return this.repository.find({
+      where: {
+        type: AttendanceType.ENTRADA,
+        timestamp: Between(startDate, endDate),
+      },
+      order: { timestamp: "ASC" },
+    });
+  }
 }
 
 export const attendanceRepository = AttendanceRepository.getInstance();

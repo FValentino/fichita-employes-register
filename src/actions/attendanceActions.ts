@@ -191,3 +191,43 @@ export async function getAttendanceReport(
     return { success: false, error: (error as Error).message };
   }
 }
+
+export async function getDashboardStats() {
+  try {
+    const allEmployees = await employeeService.getAll();
+    const activeEmployees = await employeeService.getActive();
+    const todayAttendances = await attendanceService.getTodayAttendances();
+
+    const plainAttendances = todayAttendances.map(toPlainAttendance);
+    const plainActiveEmployees = activeEmployees.map(toPlainEmployee);
+
+    const workingEmployees = plainActiveEmployees.filter((employee: any) => {
+      const employeeRecords = plainAttendances.filter((a: any) => a.employeeId === employee.id);
+      const lastRecord = employeeRecords[employeeRecords.length - 1];
+      return lastRecord?.type === AttendanceType.ENTRADA;
+    });
+
+    const entriesToday = plainAttendances.filter((a: any) => a.type === AttendanceType.ENTRADA).length;
+    const exitsToday = plainAttendances.filter((a: any) => a.type === AttendanceType.SALIDA).length;
+
+    const weekTardanzas = await attendanceService.getWeekEntries();
+    const TARDANZA_HOUR = 9;
+    const tardanzasSemanales = weekTardanzas.filter((entry: any) => {
+      const entryHour = new Date(entry.timestamp).getHours();
+      return entryHour > TARDANZA_HOUR;
+    }).length;
+
+    return {
+      success: true,
+      data: {
+        totalEmployees: allEmployees.length,
+        workingEmployees: workingEmployees.length,
+        entriesToday,
+        exitsToday,
+        tardanzasSemanales,
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}

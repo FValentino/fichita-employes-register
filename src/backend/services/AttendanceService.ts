@@ -99,6 +99,19 @@ export class AttendanceService {
   ): Promise<PaginatedResult<Attendance>> {
     return attendanceRepository.findWithFilters(filters, page, limit);
   }
+
+  public async getWeekEntries(): Promise<Attendance[]> {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    return attendanceRepository.findWeekEntries(startOfWeek, endOfWeek);
+  }
 }
 
 export const attendanceService = AttendanceService.getInstance();

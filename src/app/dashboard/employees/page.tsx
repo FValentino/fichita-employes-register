@@ -45,10 +45,10 @@ export default async function EmployeesPage() {
             <thead>
               <tr style={{ backgroundColor: theme.colors.gray[100] }}>
                 <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Nombre
+                  Apellido
                 </th>
                 <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Apellido
+                  Nombre
                 </th>
                 <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
                   Horas Semanales
@@ -59,7 +59,7 @@ export default async function EmployeesPage() {
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee: { id: number; name: string; lastName: string; weeklyHours: number }, index: number) => (
+              {employees.map((employee: { id: number; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
                 <tr
                   key={employee.id}
                   style={{
@@ -67,15 +67,15 @@ export default async function EmployeesPage() {
                   }}
                 >
                   <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {employee.name}
+                    {employee.lastName}
                   </td>
                   <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {employee.lastName}
+                    {employee.name}
                   </td>
                   <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
                     {employee.weeklyHours} hs
                   </td>
-                  <EmployeeActions id={employee.id} />
+                  <EmployeeActions employee={employee} />
                 </tr>
               ))}
             </tbody>

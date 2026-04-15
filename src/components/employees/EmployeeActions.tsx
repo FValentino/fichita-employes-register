@@ -3,21 +3,25 @@
 import { useRouter } from "next/navigation";
 import { deleteEmployee } from "@/actions";
 import { theme } from "@/lib/theme";
+import { EditEmployeeButton } from "./EditEmployeeButton";
 
-interface EmployeeActionsProps {
+interface Employee {
   id: number;
+  name: string;
+  lastName: string;
+  hourlyRate: number;
 }
 
-export function EmployeeActions({ id }: EmployeeActionsProps) {
-  const router = useRouter();
+interface EmployeeActionsProps {
+  employee: Employee;
+}
 
-  const handleEdit = () => {
-    console.log("Editar empleado:", id);
-  };
+export function EmployeeActions({ employee }: EmployeeActionsProps) {
+  const router = useRouter();
 
   const handleDelete = async () => {
     if (confirm("¿Estás seguro de eliminar este empleado?")) {
-      const result = await deleteEmployee(id);
+      const result = await deleteEmployee(employee.id);
       if (result.success) {
         router.refresh();
       } else {
@@ -27,25 +31,12 @@ export function EmployeeActions({ id }: EmployeeActionsProps) {
   };
 
   const handleViewAttendance = () => {
-    console.log("Ver asistencia:", id);
+    console.log("Ver asistencia:", employee.id);
   };
 
   return (
     <td style={{ padding: "16px", textAlign: "center" }}>
-      <button
-        onClick={handleEdit}
-        style={{
-          background: "none",
-          border: "none",
-          color: theme.colors.primary,
-          fontSize: "13px",
-          cursor: "pointer",
-          marginRight: "16px",
-          textDecoration: "underline",
-        }}
-      >
-        Editar
-      </button>
+      <EditEmployeeButton employee={employee} />
       <button
         onClick={handleDelete}
         style={{

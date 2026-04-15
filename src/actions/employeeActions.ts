@@ -16,10 +16,25 @@ function toPlainEmployee(employee: any) {
   };
 }
 
+function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
+  const capitalize = (str: string) => {
+    const trimmed = str.trim();
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+  };
+
+  return {
+    ...data,
+    name: capitalize(data.name),
+    lastName: data.lastName.toUpperCase().trim(),
+  };
+}
+
 export async function getEmployees() {
   try {
     const employees = await employeeService.getAll();
-    return { success: true, data: employees.map(toPlainEmployee) };
+    const plainEmployees = employees.map(toPlainEmployee);
+    plainEmployees.sort((a, b) => a.lastName.localeCompare(b.lastName));
+    return { success: true, data: plainEmployees };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -48,7 +63,8 @@ export async function getActiveEmployees() {
 
 export async function createEmployee(data: CreateEmployeeDTO) {
   try {
-    const employee = await employeeService.create(data);
+    const formattedData = formatEmployeeData(data);
+    const employee = await employeeService.create(formattedData);
     return { success: true, data: toPlainEmployee(employee) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
@@ -57,7 +73,8 @@ export async function createEmployee(data: CreateEmployeeDTO) {
 
 export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
   try {
-    const employee = await employeeService.update(id, data);
+    const formattedData = formatEmployeeData(data);
+    const employee = await employeeService.update(id, formattedData);
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
     }

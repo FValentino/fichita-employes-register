@@ -1,16 +1,7 @@
 import { Repository } from "typeorm";
 import { Employee } from "../models";
 import { AppDataSource } from "../datasource";
-
-export interface CreateEmployeeDTO {
-  name: string;
-  active?: boolean;
-}
-
-export interface UpdateEmployeeDTO {
-  name?: string;
-  active?: boolean;
-}
+import { CreateEmployeeDTO, UpdateEmployeeDTO } from "../types/employees";
 
 class EmployeeRepository {
   private static instance: EmployeeRepository | null = null;

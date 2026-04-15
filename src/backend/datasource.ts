@@ -1,6 +1,8 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { User, Employee, Attendance } from "./models";
+import { User } from "./models/User";
+import { Employee } from "./models/Employee";
+import { Attendance } from "./models/Attendance";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -39,5 +41,8 @@ class Database {
   }
 }
 
-export const AppDataSource = Database.getInstance().getDataSource();
-export const db = Database.getInstance();
+const dbInstance = Database.getInstance();
+dbInstance.initialize();
+
+export const AppDataSource = dbInstance.getDataSource();
+export const db = dbInstance;

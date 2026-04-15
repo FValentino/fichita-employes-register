@@ -1,5 +1,6 @@
 import { Employee } from "../models";
-import { employeeRepository, CreateEmployeeDTO, UpdateEmployeeDTO } from "../repositories";
+import { employeeRepository } from "../repositories";
+import { CreateEmployeeDTO, UpdateEmployeeDTO } from "../types/employees";
 
 export class EmployeeService {
   private static instance: EmployeeService | null = null;

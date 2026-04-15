@@ -112,6 +112,10 @@ export class AttendanceService {
 
     return attendanceRepository.findWeekEntries(startOfWeek, endOfWeek);
   }
+
+  public async getByEmployeeAndDateRange(employeeId: number, startDate: Date, endDate: Date): Promise<Attendance[]> {
+    return attendanceRepository.findByEmployeeAndDateRange(employeeId, startDate, endDate);
+  }
 }
 
 export const attendanceService = AttendanceService.getInstance();

@@ -231,3 +231,67 @@ export async function getDashboardStats() {
     return { success: false, error: (error as Error).message };
   }
 }
+
+export interface Turno {
+  id: number;
+  entryTime: Date | null;
+  exitTime: Date | null;
+  isOpen: boolean;
+}
+
+export async function getEmployeeWeeklyTurns(employeeId: number) {
+  try {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const attendances = await attendanceService.getByEmployeeAndDateRange(employeeId, monday, sunday);
+
+    const plainAttendances = attendances.map(toPlainAttendance);
+
+    const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
+    const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+
+    const turns: any[] = [];
+
+    entries.forEach((entry: any, index: number) => {
+      const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+      turns.push({
+        id: index,
+        entryTime: entry.timestamp,
+        exitTime: exit ? exit.timestamp : null,
+        isOpen: !exit,
+      });
+    });
+
+    const lastEntry = entries[entries.length - 1];
+    const lastExit = exits[exits.length - 1];
+    if (!lastExit || (lastEntry && new Date(lastEntry.timestamp) > new Date(lastExit.timestamp))) {
+      if (!turns.find((t: any) => t.isOpen)) {
+        turns.push({
+          id: turns.length,
+          entryTime: lastEntry.timestamp,
+          exitTime: null,
+          isOpen: true,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        turns,
+        monday: monday.toISOString(),
+        sunday: sunday.toISOString(),
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}

@@ -80,6 +80,21 @@ class AttendanceRepository {
     });
   }
 
+  public async findByEmployeeAndDateRange(
+    employeeId: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Attendance[]> {
+    return this.repository.find({
+      where: {
+        employee_id: employeeId,
+        timestamp: Between(startDate, endDate),
+      },
+      relations: ["employee", "recordedBy"],
+      order: { timestamp: "ASC" },
+    });
+  }
+
   public async findTodayByEmployee(employeeId: number): Promise<Attendance[]> {
     return this.findByEmployeeAndDate(employeeId, new Date());
   }

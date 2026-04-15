@@ -31,7 +31,7 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
   };
 
   const handleViewAttendance = () => {
-    console.log("Ver asistencia:", employee.id);
+    router.push(`/dashboard/attendance/${employee.id}`);
   };
 
   return (
@@ -40,13 +40,15 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
       <button
         onClick={handleDelete}
         style={{
-          background: "none",
-          border: "none",
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: `1px solid #EF4444`,
+          backgroundColor: theme.colors.white,
           color: "#EF4444",
-          fontSize: "13px",
+          fontSize: "12px",
+          fontWeight: "500",
           cursor: "pointer",
-          marginRight: "16px",
-          textDecoration: "underline",
+          marginRight: "8px",
         }}
       >
         Eliminar
@@ -54,12 +56,14 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
       <button
         onClick={handleViewAttendance}
         style={{
-          background: "none",
-          border: "none",
-          color: theme.colors.primary,
-          fontSize: "13px",
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: `1px solid ${theme.colors.primary}`,
+          backgroundColor: theme.colors.white,
+          color: theme.colors.neutral,
+          fontSize: "12px",
+          fontWeight: "500",
           cursor: "pointer",
-          textDecoration: "underline",
         }}
       >
         Ver asistencia

@@ -40,8 +40,8 @@ export function RegisterAttendanceButton({ employeeId, isWorking }: RegisterAtte
         fontWeight: "600",
         fontSize: "13px",
         cursor: "pointer",
-        backgroundColor: isWorking ? "#EF4444" : "#22C55E",
-        color: theme.colors.white,
+        backgroundColor: isWorking ? "#EF4444" : theme.colors.secondary,
+        color: isWorking ? theme.colors.white : theme.colors.neutral,
       }}
     >
       {isWorking ? "Registrar salida" : "Registrar ingreso"}

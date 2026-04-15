@@ -75,13 +75,15 @@ export function EditEmployeeButton({ employee }: EditEmployeeButtonProps) {
       <button
         onClick={() => setIsOpen(true)}
         style={{
-          background: "none",
-          border: "none",
-          color: theme.colors.primary,
-          fontSize: "13px",
+          padding: "6px 12px",
+          borderRadius: "6px",
+          border: `1px solid ${theme.colors.primary}`,
+          backgroundColor: theme.colors.white,
+          color: theme.colors.neutral,
+          fontSize: "12px",
+          fontWeight: "500",
           cursor: "pointer",
-          marginRight: "16px",
-          textDecoration: "underline",
+          marginRight: "8px",
         }}
       >
         Editar

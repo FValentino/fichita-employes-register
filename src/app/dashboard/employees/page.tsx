@@ -1,6 +1,7 @@
 import { theme } from "@/lib/theme";
 import { AddEmployeeButton, EmployeeActions } from "@/components/employees";
 import { getEmployees } from "@/actions";
+import { PageTitle } from "@/components/PageTitle";
 
 export default async function EmployeesPage() {
   const result = await getEmployees();
@@ -9,7 +10,7 @@ export default async function EmployeesPage() {
     return (
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <h2 style={{ color: theme.colors.neutral, margin: 0, fontSize: "24px", fontWeight: "bold" }}>Empleados</h2>
+          <PageTitle>Empleados</PageTitle>
           <AddEmployeeButton />
         </div>
         <p style={{ color: "#EF4444" }}>Error al cargar empleados: {result.error}</p>
@@ -22,7 +23,7 @@ export default async function EmployeesPage() {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <h2 style={{ color: theme.colors.neutral, margin: 0, fontSize: "24px", fontWeight: "bold" }}>Empleados</h2>
+        <PageTitle>Empleados</PageTitle>
         <AddEmployeeButton />
       </div>
 

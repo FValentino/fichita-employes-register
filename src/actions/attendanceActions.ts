@@ -295,3 +295,56 @@ export async function getEmployeeWeeklyTurns(employeeId: number) {
     return { success: false, error: (error as Error).message };
   }
 }
+
+export async function getEmployeeMonthlyTurns(employeeId: number, month?: number, year?: number) {
+  try {
+    const targetMonth = month ?? new Date().getMonth() + 1;
+    const targetYear = year ?? new Date().getFullYear();
+    
+    const firstDay = new Date(targetYear, targetMonth - 1, 1);
+    const lastDay = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+
+    const attendances = await attendanceService.getByEmployeeAndDateRange(employeeId, firstDay, lastDay);
+
+    const plainAttendances = attendances.map(toPlainAttendance);
+
+    const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
+    const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+
+    const turns: any[] = [];
+
+    entries.forEach((entry: any, index: number) => {
+      const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+      turns.push({
+        id: index,
+        entryTime: entry.timestamp,
+        exitTime: exit ? exit.timestamp : null,
+        isOpen: !exit,
+      });
+    });
+
+    const lastEntry = entries[entries.length - 1];
+    const lastExit = exits[exits.length - 1];
+    if (!lastExit || (lastEntry && new Date(lastEntry.timestamp) > new Date(lastExit.timestamp))) {
+      if (!turns.find((t: any) => t.isOpen)) {
+        turns.push({
+          id: turns.length,
+          entryTime: lastEntry.timestamp,
+          exitTime: null,
+          isOpen: true,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        turns,
+        firstDay: firstDay.toISOString(),
+        lastDay: lastDay.toISOString(),
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}

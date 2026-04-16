@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { theme } from "@/lib/theme";
 import { getEmployeeWeeklyTurns, Turno } from "@/actions";
+import { PageTitle } from "@/components/PageTitle";
 
 interface TurnoData {
   id: number;
@@ -84,9 +85,7 @@ export default function AttendanceDetailPage() {
 
   return (
     <div>
-      <h2 style={{ color: theme.colors.neutral, marginBottom: "24px", fontSize: "24px", fontWeight: "bold" }}>
-        Asistencia desde {formatDate(weeklyData.monday)} hasta {formatDate(weeklyData.sunday)}
-      </h2>
+      <PageTitle>Asistencia desde {formatDate(weeklyData.monday)} hasta {formatDate(weeklyData.sunday)}</PageTitle>
 
       <div
         style={{

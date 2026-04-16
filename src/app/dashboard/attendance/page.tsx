@@ -1,6 +1,7 @@
 import { theme } from "@/lib/theme";
 import { RegisterAttendanceButton } from "@/components/attendance";
 import { getAttendanceStatus } from "@/actions";
+import { PageTitle } from "@/components/PageTitle";
 
 export default async function AttendancePage() {
   const result = await getAttendanceStatus();
@@ -8,9 +9,7 @@ export default async function AttendancePage() {
   if (!result.success) {
     return (
       <div>
-        <h2 style={{ color: theme.colors.neutral, margin: 0, fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>
-          Registrar Asistencia
-        </h2>
+        <PageTitle>Registrar Asistencia</PageTitle>
         <p style={{ color: "#EF4444" }}>Error al cargar: {result.error}</p>
       </div>
     );
@@ -20,9 +19,7 @@ export default async function AttendancePage() {
 
   return (
     <div>
-      <h2 style={{ color: theme.colors.neutral, margin: 0, fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>
-        Registrar Asistencia
-      </h2>
+      <PageTitle>Registrar Asistencia</PageTitle>
 
       <div
         style={{

@@ -1,5 +1,6 @@
 import { theme } from "@/lib/theme";
 import { getDashboardStats } from "@/actions";
+import { PageTitle } from "@/components/PageTitle";
 
 function StatCard({ title, value, color }: { title: string; value: number; color: string }) {
   return (
@@ -36,9 +37,7 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <h2 style={{ color: theme.colors.neutral, marginBottom: "24px" }}>
-        Dashboard - Seguimiento de Asistencia
-      </h2>
+      <PageTitle>Dashboard - Seguimiento de Asistencia</PageTitle>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <div

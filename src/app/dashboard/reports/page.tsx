@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { theme } from "@/lib/theme";
-import { getEmployees } from "@/actions";
+import { PageTitle } from "@/components/PageTitle";
 
 interface ReportCardProps {
   title: string;
@@ -42,122 +41,27 @@ function ReportCard({ title, description, onClick }: ReportCardProps) {
   );
 }
 
-interface EmployeeSelectorProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (employeeId: number) => void;
-}
-
-function EmployeeSelector({ isOpen, onClose, onSelect }: EmployeeSelectorProps) {
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    
-    async function fetchEmployees() {
-      setLoading(true);
-      const result = await getEmployees();
-      if (result.success && result.data) {
-        setEmployees(result.data);
-      }
-      setLoading(false);
-    }
-    fetchEmployees();
-  }, [isOpen]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          padding: "24px",
-          borderRadius: "12px",
-          width: "100%",
-          maxWidth: "400px",
-          maxHeight: "80vh",
-          overflow: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 style={{ color: theme.colors.neutral, margin: "0 0 16px 0", fontSize: "18px", fontWeight: "bold" }}>
-          Seleccionar Empleado
-        </h3>
-        {loading ? (
-          <p style={{ color: theme.colors.gray[500] }}>Cargando...</p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {employees.map((emp) => (
-              <button
-                key={emp.id}
-                onClick={() => onSelect(emp.id)}
-                style={{
-                  padding: "12px",
-                  borderRadius: "8px",
-                  border: `1px solid ${theme.colors.gray[300]}`,
-                  backgroundColor: theme.colors.white,
-                  color: theme.colors.neutral,
-                  cursor: "pointer",
-                  textAlign: "left",
-                  fontSize: "14px",
-                }}
-              >
-                {emp.lastName} {emp.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function ReportsPage() {
-  const [showEmployeeSelector, setShowEmployeeSelector] = useState(false);
-
   const handleHistoricoClick = () => {
-    setShowEmployeeSelector(true);
-  };
-
-  const handleEmployeeSelect = (employeeId: number) => {
-    setShowEmployeeSelector(false);
-    window.open(`/dashboard/reports/historico/${employeeId}`, "_blank");
+    window.location.href = "/dashboard/reports/historico";
   };
 
   const handleSemanalClick = () => {
-    window.open("/dashboard/reports/semanal", "_blank");
+    window.location.href = "/dashboard/reports/semanal";
   };
 
   const handleMensualClick = () => {
-    window.open("/dashboard/reports/mensual", "_blank");
+    window.location.href = "/dashboard/reports/mensual";
   };
 
   return (
     <div>
-      <h2 style={{ color: theme.colors.neutral, marginBottom: "24px", fontSize: "24px", fontWeight: "bold" }}>
-        Reportes
-      </h2>
+      <PageTitle>Reportes</PageTitle>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         <ReportCard
           title="Histórico de Empleado"
-          description="Ver el historial completo de un empleado seleccionado, con detalle semanal y sueldo por semana."
+          description="Ver el historial completo de un empleado seleccionado, con detalle mensual y sueldo."
           onClick={handleHistoricoClick}
         />
         <ReportCard
@@ -171,12 +75,6 @@ export default function ReportsPage() {
           onClick={handleMensualClick}
         />
       </div>
-
-      <EmployeeSelector
-        isOpen={showEmployeeSelector}
-        onClose={() => setShowEmployeeSelector(false)}
-        onSelect={handleEmployeeSelect}
-      />
     </div>
   );
 }

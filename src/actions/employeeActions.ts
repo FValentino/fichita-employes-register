@@ -118,6 +118,7 @@ export interface EmployeeWithTurns {
   }>;
   totalHours: number;
   weeklySalary: number;
+  workDays: number;
 }
 
 export async function getEmployeesWithWeeklyTurns() {
@@ -173,6 +174,14 @@ export async function getEmployeesWithWeeklyTurns() {
       const totalHours = totalMinutes / 60;
       const weeklySalary = totalHours * Number(emp.hourlyRate);
 
+      const uniqueDays = new Set<string>();
+      turns.forEach((turn: any) => {
+        if (turn.entryTime) {
+          const date = new Date(turn.entryTime);
+          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+        }
+      });
+
       result.push({
         id: emp.id,
         name: emp.name,
@@ -182,6 +191,7 @@ export async function getEmployeesWithWeeklyTurns() {
         turns,
         totalHours,
         weeklySalary,
+        workDays: uniqueDays.size,
       });
     }
 
@@ -245,6 +255,14 @@ export async function getEmployeesWithMonthlyTurns() {
       const totalHours = totalMinutes / 60;
       const weeklySalary = totalHours * Number(emp.hourlyRate);
 
+      const uniqueDays = new Set<string>();
+      turns.forEach((turn: any) => {
+        if (turn.entryTime) {
+          const date = new Date(turn.entryTime);
+          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+        }
+      });
+
       result.push({
         id: emp.id,
         name: emp.name,
@@ -254,6 +272,90 @@ export async function getEmployeesWithMonthlyTurns() {
         turns,
         totalHours,
         weeklySalary,
+        workDays: uniqueDays.size,
+      });
+    }
+
+    return {
+      success: true,
+      data: {
+        employees: result,
+        monthStart: firstDay.toISOString(),
+        monthEnd: lastDay.toISOString(),
+      }
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getEmployeesWithMonthlyTurnsForPeriod(month?: number, year?: number) {
+  try {
+    const employees = await employeeService.getActive();
+    const result: EmployeeWithTurns[] = [];
+
+    const targetMonth = month ?? new Date().getMonth() + 1;
+    const targetYear = year ?? new Date().getFullYear();
+    
+    const firstDay = new Date(targetYear, targetMonth - 1, 1);
+    const lastDay = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+
+    const { attendanceService } = await import("@/backend/services");
+
+    for (const emp of employees) {
+      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);
+      const plainAttendances = attendances.map(toPlainAttendance);
+      
+      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
+      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+
+      const turns: Array<{
+        id: number;
+        entryTime: Date | null;
+        exitTime: Date | null;
+        isOpen: boolean;
+      }> = [];
+
+      entries.forEach((entry: any, index: number) => {
+        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+        turns.push({
+          id: index,
+          entryTime: entry.timestamp,
+          exitTime: exit ? exit.timestamp : null,
+          isOpen: !exit,
+        });
+      });
+
+      let totalMinutes = 0;
+      for (const turn of turns) {
+        if (turn.entryTime && turn.exitTime) {
+          const entry = new Date(turn.entryTime).getTime();
+          const exit = new Date(turn.exitTime).getTime();
+          totalMinutes += (exit - entry) / (1000 * 60);
+        }
+      }
+
+      const totalHours = totalMinutes / 60;
+      const weeklySalary = totalHours * Number(emp.hourlyRate);
+
+      const uniqueDays = new Set<string>();
+      turns.forEach((turn: any) => {
+        if (turn.entryTime) {
+          const date = new Date(turn.entryTime);
+          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+        }
+      });
+
+      result.push({
+        id: emp.id,
+        name: emp.name,
+        lastName: emp.lastName,
+        hourlyRate: Number(emp.hourlyRate),
+        weeklyHours: Number(emp.weeklyHours),
+        turns,
+        totalHours,
+        weeklySalary,
+        workDays: uniqueDays.size,
       });
     }
 

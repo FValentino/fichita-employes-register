@@ -2,6 +2,7 @@
 
 import { attendanceService } from "@/backend/services";
 import { employeeService } from "@/backend/services";
+import { waitForDb } from "@/backend/datasource";
 import { AttendanceType } from "@/backend/models";
 
 interface RecordAttendanceParams {
@@ -127,6 +128,7 @@ export async function recordExit(employeeId: number, recordedBy?: number | null)
 
 export async function getAttendanceStatus() {
   try {
+    await waitForDb();
     const employees = await employeeService.getActive();
     const todayAttendances = await attendanceService.getTodayAttendances();
 
@@ -194,6 +196,7 @@ export async function getAttendanceReport(
 
 export async function getDashboardStats() {
   try {
+    await waitForDb();
     const allEmployees = await employeeService.getAll();
     const activeEmployees = await employeeService.getActive();
     const todayAttendances = await attendanceService.getTodayAttendances();
@@ -241,6 +244,7 @@ export interface Turno {
 
 export async function getEmployeeWeeklyTurns(employeeId: number) {
   try {
+    await waitForDb();
     const today = new Date();
     const dayOfWeek = today.getDay();
     const monday = new Date(today);
@@ -298,6 +302,7 @@ export async function getEmployeeWeeklyTurns(employeeId: number) {
 
 export async function getEmployeeMonthlyTurns(employeeId: number, month?: number, year?: number) {
   try {
+    await waitForDb();
     const targetMonth = month ?? new Date().getMonth() + 1;
     const targetYear = year ?? new Date().getFullYear();
     

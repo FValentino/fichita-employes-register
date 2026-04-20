@@ -1,6 +1,7 @@
 "use server";
 
 import { employeeService } from "@/backend/services";
+import { waitForDb } from "@/backend/datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
 
 function toPlainAttendance(attendance: any) {
@@ -42,6 +43,7 @@ function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
 
 export async function getEmployees() {
   try {
+    await waitForDb();
     const employees = await employeeService.getAll();
     const plainEmployees = employees.map(toPlainEmployee);
     plainEmployees.sort((a, b) => a.lastName.localeCompare(b.lastName));
@@ -53,6 +55,7 @@ export async function getEmployees() {
 
 export async function getEmployee(id: number) {
   try {
+    await waitForDb();
     const employee = await employeeService.getById(id);
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
@@ -65,6 +68,7 @@ export async function getEmployee(id: number) {
 
 export async function getActiveEmployees() {
   try {
+    await waitForDb();
     const employees = await employeeService.getActive();
     return { success: true, data: employees.map(toPlainEmployee) };
   } catch (error) {
@@ -74,6 +78,7 @@ export async function getActiveEmployees() {
 
 export async function createEmployee(data: CreateEmployeeDTO) {
   try {
+    await waitForDb();
     const formattedData = formatEmployeeData(data) as CreateEmployeeDTO;
     const employee = await employeeService.create(formattedData);
     return { success: true, data: toPlainEmployee(employee) };
@@ -84,6 +89,7 @@ export async function createEmployee(data: CreateEmployeeDTO) {
 
 export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
   try {
+    await waitForDb();
     const formattedData = formatEmployeeData(data) as UpdateEmployeeDTO;
     const employee = await employeeService.update(id, formattedData);
     if (!employee) {
@@ -97,6 +103,7 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
 
 export async function deleteEmployee(id: number) {
   try {
+    await waitForDb();
     const deleted = await employeeService.delete(id);
     return { success: deleted };
   } catch (error) {
@@ -123,6 +130,7 @@ export interface EmployeeWithTurns {
 
 export async function getEmployeesWithWeeklyTurns() {
   try {
+    await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];
 
@@ -210,6 +218,7 @@ export async function getEmployeesWithWeeklyTurns() {
 
 export async function getEmployeesWithMonthlyTurns() {
   try {
+    await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];
 
@@ -291,6 +300,7 @@ export async function getEmployeesWithMonthlyTurns() {
 
 export async function getEmployeesWithMonthlyTurnsForPeriod(month?: number, year?: number) {
   try {
+    await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];
 

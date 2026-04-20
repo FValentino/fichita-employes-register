@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
+import { Attendance } from "./Attendance";
 
 export enum UserRole {
   ADMIN = "ADMIN",
@@ -39,6 +40,6 @@ export class User {
   @UpdateDateColumn()
   updated_at!: Date;
 
-  @OneToMany("Attendance", "recordedBy")
-  attendances!: any[];
+  @OneToMany(() => Attendance, (attendance) => attendance.recordedBy)
+  attendances!: Attendance[];
 }

@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from "typeorm";
+import { Attendance } from "./Attendance";
 
 @Entity("employees")
 export class Employee {
@@ -33,6 +34,6 @@ export class Employee {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @OneToMany("Attendance", "employee")
-  attendances!: any[];
+  @OneToMany(() => Attendance, (attendance) => attendance.employee)
+  attendances!: Attendance[];
 }

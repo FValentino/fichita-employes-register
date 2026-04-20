@@ -6,6 +6,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
+import { Employee } from "./Employee";
+import { User } from "./User";
 
 export enum AttendanceType {
   ENTRADA = "ENTRADA",
@@ -35,11 +37,12 @@ export class Attendance {
   @CreateDateColumn()
   created_at!: Date;
 
-  @ManyToOne("Employee", "attendances")
-  @JoinColumn({ name: "employee_id" })
-  employee!: any;
 
-  @ManyToOne("User", "attendances", { nullable: true })
+  @ManyToOne(() => Employee, (employee) => employee.attendances)
+  @JoinColumn({ name: "employee_id" })
+  employee!: Employee;
+
+  @ManyToOne(() => User, (user) => user.attendances, { nullable: true })
   @JoinColumn({ name: "recorded_by" })
-  recordedBy!: any;
+  recordedBy!: User;
 }

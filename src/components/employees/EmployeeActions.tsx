@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { deleteEmployee } from "@/actions";
-import { theme } from "@/lib/theme";
 import { EditEmployeeButton } from "./EditEmployeeButton";
 
 interface Employee {
@@ -35,39 +34,42 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
   };
 
   return (
-    <td style={{ padding: "16px", textAlign: "center" }}>
-      <EditEmployeeButton employee={employee} />
-      <button
-        onClick={handleDelete}
-        style={{
-          padding: "6px 12px",
-          borderRadius: "6px",
-          border: `1px solid #EF4444`,
-          backgroundColor: theme.colors.white,
-          color: "#EF4444",
-          fontSize: "12px",
-          fontWeight: "500",
-          cursor: "pointer",
-          marginRight: "8px",
-        }}
-      >
-        Eliminar
-      </button>
-      <button
-        onClick={handleViewAttendance}
-        style={{
-          padding: "6px 12px",
-          borderRadius: "6px",
-          border: `1px solid ${theme.colors.primary}`,
-          backgroundColor: theme.colors.white,
-          color: theme.colors.neutral,
-          fontSize: "12px",
-          fontWeight: "500",
-          cursor: "pointer",
-        }}
-      >
-        Ver asistencia
-      </button>
-    </td>
+    <>
+      {/* Mobile */}
+      <td className="p-4 md:hidden">
+        <div className="flex gap-2 justify-end">
+          <EditEmployeeButton employee={employee} />
+          <button
+            onClick={handleDelete}
+            className="px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
+          >
+            Eliminar
+          </button>
+          <button
+            onClick={handleViewAttendance}
+            className="px-3 py-1.5 rounded-md border border-amber-500 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-amber-50 transition-colors"
+          >
+            Ver
+          </button>
+        </div>
+      </td>
+
+      {/* Desktop */}
+      <td className="hidden md:table-cell p-4 text-center">
+        <EditEmployeeButton employee={employee} />
+        <button
+          onClick={handleDelete}
+          className="mx-1 px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
+        >
+          Eliminar
+        </button>
+        <button
+          onClick={handleViewAttendance}
+          className="mx-1 px-3 py-1.5 rounded-md border border-amber-500 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-amber-50 transition-colors"
+        >
+          Ver asistencia
+        </button>
+      </td>
+    </>
   );
 }

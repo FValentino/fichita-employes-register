@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getEmployees } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";
-import { theme } from "@/lib/theme";
 
 interface Employee {
   id: string;
@@ -83,34 +82,21 @@ export default function HistoricoSelectionPage() {
   ];
 
   return (
-    <div style={{ padding: 40 }}>
+    <div className="p-4 md:p-10">
       <PageTitle>Histórico de Turnos</PageTitle>
-      <p style={{ marginBottom: 24, color: "#666" }}>
+      <p className="mb-6 text-gray-600">
         Seleccione un empleado y el período que desea consultar
       </p>
 
-      <div style={{ 
-        backgroundColor: "#fff", 
-        borderRadius: 12, 
-        padding: 24, 
-        maxWidth: 500,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
-      }}>
-        <div style={{ marginBottom: 20 }}>
-          <label style={{ display: "block", marginBottom: 8, fontWeight: "bold", color: theme.colors.neutral }}>
+      <div className="bg-white rounded-xl p-6 max-w-md shadow-sm">
+        <div className="mb-5">
+          <label className="block mb-2 font-semibold text-gray-800">
             Empleado
           </label>
           <select
             value={selectedEmployee || ""}
             onChange={(e) => setSelectedEmployee(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "12px",
-              borderRadius: 8,
-              border: "1px solid #d4d4d4",
-              fontSize: "14px",
-              backgroundColor: "#fff",
-            }}
+            className="w-full px-3 py-3 rounded-lg border border-gray-300 text-sm bg-white"
           >
             <option value="">Seleccionar empleado...</option>
             {employees.map((emp) => (
@@ -121,22 +107,15 @@ export default function HistoricoSelectionPage() {
           </select>
         </div>
 
-        <div style={{ display: "flex", gap: 16, marginBottom: 24 }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold", color: theme.colors.neutral }}>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1">
+            <label className="block mb-2 font-semibold text-gray-800">
               Mes
             </label>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 8,
-                border: "1px solid #d4d4d4",
-                fontSize: "14px",
-                backgroundColor: "#fff",
-              }}
+              className="w-full px-3 py-3 rounded-lg border border-gray-300 text-sm bg-white"
             >
               {months.map((m) => (
                 <option key={m.value} value={m.value}>
@@ -145,21 +124,14 @@ export default function HistoricoSelectionPage() {
               ))}
             </select>
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: "block", marginBottom: 8, fontWeight: "bold", color: theme.colors.neutral }}>
+          <div className="flex-1">
+            <label className="block mb-2 font-semibold text-gray-800">
               Año
             </label>
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 8,
-                border: "1px solid #d4d4d4",
-                fontSize: "14px",
-                backgroundColor: "#fff",
-              }}
+              className="w-full px-3 py-3 rounded-lg border border-gray-300 text-sm bg-white"
             >
               {years.map((y) => (
                 <option key={y} value={y}>
@@ -174,17 +146,11 @@ export default function HistoricoSelectionPage() {
           type="button"
           onClick={handleGenerar}
           disabled={!selectedEmployee || !selectedMonth || !selectedYear || downloading}
-          style={{
-            width: "100%",
-            padding: "14px",
-            backgroundColor: selectedEmployee && selectedMonth && selectedYear && !downloading ? theme.colors.secondary : "#ccc",
-            color: "#000",
-            border: "none",
-            borderRadius: 8,
-            fontSize: "16px",
-            fontWeight: "bold",
-            cursor: selectedEmployee && selectedMonth && selectedYear && !downloading ? "pointer" : "not-allowed",
-          }}
+          className={`w-full py-3.5 rounded-lg text-base font-bold ${
+            selectedEmployee && selectedMonth && selectedYear && !downloading
+              ? "bg-amber-500 text-neutral-900 cursor-pointer hover:bg-amber-600"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+          }`}
         >
           {downloading ? "Generando..." : "Descargar PDF"}
         </button>

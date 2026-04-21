@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { recordEntry, recordExit } from "@/actions";
-import { theme } from "@/lib/theme";
 
 interface RegisterAttendanceButtonProps {
   employeeId: string;
@@ -26,23 +25,17 @@ export function RegisterAttendanceButton({ employeeId, isWorking }: RegisterAtte
         return;
       }
     }
-
     router.refresh();
   };
 
   return (
     <button
       onClick={handleRegister}
-      style={{
-        padding: "8px 16px",
-        borderRadius: "8px",
-        border: "none",
-        fontWeight: "600",
-        fontSize: "13px",
-        cursor: "pointer",
-        backgroundColor: isWorking ? "#EF4444" : theme.colors.secondary,
-        color: isWorking ? theme.colors.white : theme.colors.neutral,
-      }}
+      className={`px-4 py-2 rounded-lg border-none font-semibold text-xs md:text-sm cursor-pointer transition-colors ${
+        isWorking
+          ? "bg-red-500 text-white hover:bg-red-600"
+          : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
+      }`}
     >
       {isWorking ? "Registrar salida" : "Registrar ingreso"}
     </button>

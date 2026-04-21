@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { theme } from "@/lib/theme";
+import { useState } from "react";
 import { PageTitle } from "@/components/PageTitle";
 
 interface ReportCardProps {
@@ -14,30 +13,10 @@ function ReportCard({ title, description, onClick }: ReportCardProps) {
   return (
     <div
       onClick={onClick}
-      style={{
-        backgroundColor: theme.colors.white,
-        padding: "24px",
-        borderRadius: "12px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-        cursor: "pointer",
-        transition: "all 0.2s",
-        border: `2px solid transparent`,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = theme.colors.primary;
-        e.currentTarget.style.transform = "translateY(-2px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = "transparent";
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
+      className="bg-white p-4 md:p-6 rounded-xl shadow-sm cursor-pointer border-2 border-transparent hover:border-amber-500 hover:-translate-y-0.5 transition-all"
     >
-      <h3 style={{ color: theme.colors.neutral, fontSize: "18px", fontWeight: "bold", margin: "0 0 8px 0" }}>
-        {title}
-      </h3>
-      <p style={{ color: theme.colors.gray[500], fontSize: "14px", margin: 0 }}>
-        {description}
-      </p>
+      <h3 className="text-base md:text-lg font-bold text-gray-800 m-0 mb-2">{title}</h3>
+      <p className="text-gray-500 text-sm m-0">{description}</p>
     </div>
   );
 }
@@ -52,32 +31,8 @@ function Popup({ isOpen, onClose, children }: PopupProps) {
   if (!isOpen) return null;
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          padding: "32px",
-          borderRadius: "16px",
-          maxWidth: "450px",
-          width: "90%",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white p-6 md:p-8 rounded-2xl max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -160,10 +115,10 @@ export default function ReportsPage() {
   };
 
   return (
-    <div>
+    <div className="p-4">
       <PageTitle>Reportes</PageTitle>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div className="flex flex-col gap-4">
         <ReportCard
           title="Histórico de Empleado"
           description="Ver el historial completo de un empleado seleccionado, con detalle mensual y sueldo."
@@ -184,40 +139,28 @@ export default function ReportsPage() {
       </div>
 
       <Popup isOpen={showCurrentReportsPopup} onClose={() => setShowCurrentReportsPopup(false)}>
-        <h2 style={{ color: theme.colors.neutral, fontSize: "20px", fontWeight: "bold", margin: "0 0 8px 0", textAlign: "center" }}>
+        <h2 className="text-xl font-bold text-gray-800 m-0 mb-2 text-center">
           Reportes Generales Actuales
         </h2>
-        <p style={{ color: theme.colors.gray[500], fontSize: "14px", margin: "0 0 24px 0", textAlign: "center" }}>
+        <p className="text-gray-500 text-sm m-0 mb-6 text-center">
           Seleccione el tipo de reporte que desea generar
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div className="flex flex-col gap-3">
           <button
             type="button"
             onClick={() => handleDownloadReport("semanal")}
             disabled={downloading}
-            style={{
-              width: "100%",
-              padding: "16px",
-              backgroundColor: downloading ? "#ccc" : theme.colors.secondary,
-              color: "#000",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: downloading ? "not-allowed" : "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-            }}
+            className={`w-full py-4 rounded-lg border-none text-base font-bold cursor-pointer flex flex-col items-center gap-1 ${
+              downloading ? "bg-gray-300 cursor-not-allowed" : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
+            }`}
           >
             {downloading && downloadType === "semanal" ? (
               "Generando..."
             ) : (
               <>
                 <span>Semana Actual</span>
-                <span style={{ fontSize: "12px", fontWeight: "normal" }}>
+                <span className="text-xs font-normal">
                   {formatDate(monday)} - {formatDate(sunday)}
                 </span>
               </>
@@ -228,28 +171,16 @@ export default function ReportsPage() {
             type="button"
             onClick={() => handleDownloadReport("mensual")}
             disabled={downloading}
-            style={{
-              width: "100%",
-              padding: "16px",
-              backgroundColor: downloading ? "#ccc" : theme.colors.secondary,
-              color: "#000",
-              border: "none",
-              borderRadius: "8px",
-              fontSize: "16px",
-              fontWeight: "bold",
-              cursor: downloading ? "not-allowed" : "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              gap: "4px",
-            }}
+            className={`w-full py-4 rounded-lg border-none text-base font-bold cursor-pointer flex flex-col items-center gap-1 ${
+              downloading ? "bg-gray-300 cursor-not-allowed" : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
+            }`}
           >
             {downloading && downloadType === "mensual" ? (
               "Generando..."
             ) : (
               <>
                 <span>Mes Actual</span>
-                <span style={{ fontSize: "12px", fontWeight: "normal" }}>
+                <span className="text-xs font-normal">
                   {getMonthName(currentMonth)} {currentYear}
                 </span>
               </>
@@ -260,17 +191,7 @@ export default function ReportsPage() {
         <button
           type="button"
           onClick={() => setShowCurrentReportsPopup(false)}
-          style={{
-            width: "100%",
-            marginTop: "16px",
-            padding: "12px",
-            backgroundColor: "transparent",
-            color: theme.colors.gray[500],
-            border: `1px solid ${theme.colors.gray[300]}`,
-            borderRadius: "8px",
-            fontSize: "14px",
-            cursor: "pointer",
-          }}
+          className="w-full mt-4 py-3 bg-transparent text-gray-500 border border-gray-300 rounded-lg text-sm cursor-pointer hover:bg-gray-50"
         >
           Cancelar
         </button>

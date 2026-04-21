@@ -1,4 +1,3 @@
-import { theme } from "@/lib/theme";
 import { AddEmployeeButton, EmployeeActions } from "@/components/employees";
 import { getEmployees } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";
@@ -8,12 +7,12 @@ export default async function EmployeesPage() {
 
   if (!result.success) {
     return (
-      <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-          <PageTitle>Empleados</PageTitle>
+      <div className="w-full p-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+          <PageTitle> Empleados </PageTitle>
           <AddEmployeeButton />
         </div>
-        <p style={{ color: "#EF4444" }}>Error al cargar empleados: {result.error}</p>
+        <p className="text-red-500">Error al cargar empleados: {result.error}</p>
       </div>
     );
   }
@@ -21,66 +20,58 @@ export default async function EmployeesPage() {
   const employees = result.data ?? [];
 
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
-        <PageTitle>Empleados</PageTitle>
+    <div className="p-4">
+      <div className="w-full flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <PageTitle> Empleados </PageTitle>
         <AddEmployeeButton />
       </div>
 
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          borderRadius: "12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {employees.length === 0 ? (
-          <div style={{ padding: "48px", textAlign: "center" }}>
-            <p style={{ color: theme.colors.gray[500], fontSize: "16px", margin: 0 }}>
-              No hay empleados
-            </p>
+          <div className="p-12 text-center">
+            <p className="text-gray-500 text-base m-0">No hay empleados</p>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: theme.colors.gray[100] }}>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Apellido
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Nombre
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Horas Semanales
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
-                <tr
-                  key={employee.id}
-                  style={{
-                    borderTop: index > 0 ? `1px solid ${theme.colors.gray[200]}` : "none",
-                  }}
-                >
-                  <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {employee.lastName}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {employee.name}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {employee.weeklyHours} hs
-                  </td>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Apellido</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Nombre</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Horas Semanales</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
+                    <tr key={employee.id} className={index > 0 ? "border-t border-gray-200" : ""}>
+                      <td className="p-4 text-center text-gray-700 text-sm">{employee.lastName}</td>
+                      <td className="p-4 text-center text-gray-700 text-sm">{employee.name}</td>
+                      <td className="p-4 text-center text-gray-700 text-sm">{employee.weeklyHours} hs</td>
+                      <EmployeeActions employee={employee} />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }) => (
+                <div key={employee.id} className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">{employee.lastName}, {employee.name}</p>
+                      <p className="text-sm text-gray-500">{employee.weeklyHours} horas semanales</p>
+                    </div>
+                  </div>
                   <EmployeeActions employee={employee} />
-                </tr>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>

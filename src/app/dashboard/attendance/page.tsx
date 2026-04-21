@@ -1,4 +1,3 @@
-import { theme } from "@/lib/theme";
 import { RegisterAttendanceButton } from "@/components/attendance";
 import { getAttendanceStatus } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";
@@ -8,9 +7,9 @@ export default async function AttendancePage() {
 
   if (!result.success) {
     return (
-      <div>
+      <div className="p-4">
         <PageTitle>Registrar Asistencia</PageTitle>
-        <p style={{ color: "#EF4444" }}>Error al cargar: {result.error}</p>
+        <p className="text-red-500">Error al cargar: {result.error}</p>
       </div>
     );
   }
@@ -18,76 +17,77 @@ export default async function AttendancePage() {
   const status = result.data ?? [];
 
   return (
-    <div>
+    <div className="p-4">
       <PageTitle>Registrar Asistencia</PageTitle>
 
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          borderRadius: "12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          overflow: "hidden",
-        }}
-      >
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {status.length === 0 ? (
-          <div style={{ padding: "48px", textAlign: "center" }}>
-            <p style={{ color: theme.colors.gray[500], fontSize: "16px", margin: 0 }}>
-              No hay empleados activos
-            </p>
+          <div className="p-12 text-center">
+            <p className="text-gray-500 text-base m-0">No hay empleados activos</p>
           </div>
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ backgroundColor: theme.colors.gray[100] }}>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Apellido
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Nombre
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Estado
-                </th>
-                <th style={{ padding: "16px", textAlign: "center", color: theme.colors.gray[500], fontSize: "14px", fontWeight: "500" }}>
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {status.map((item: any, index: number) => (
-                <tr
-                  key={item.employeeId}
-                  style={{
-                    borderTop: index > 0 ? `1px solid ${theme.colors.gray[200]}` : "none",
-                  }}
-                >
-                  <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {item.lastName}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center", color: theme.colors.neutral, fontSize: "14px" }}>
-                    {item.name}
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
-                    <span
-                      style={{
-                        padding: "4px 12px",
-                        borderRadius: "12px",
-                        fontSize: "13px",
-                        fontWeight: "500",
-                        backgroundColor: item.isWorking ? "#DCFCE7" : "#FEF3C7",
-                        color: item.isWorking ? "#166534" : "#92400E",
-                      }}
-                    >
-                      {item.isWorking ? "Trabajando" : "No trabajando"}
-                    </span>
-                  </td>
-                  <td style={{ padding: "16px", textAlign: "center" }}>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Apellido</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Nombre</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Estado</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {status.map((item: any, index: number) => (
+                    <tr key={item.employeeId} className={index > 0 ? "border-t border-gray-200" : ""}>
+                      <td className="p-4 text-center text-gray-700 text-sm">{item.lastName}</td>
+                      <td className="p-4 text-center text-gray-700 text-sm">{item.name}</td>
+                      <td className="p-4 text-center">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            item.isWorking
+                              ? "bg-green-100 text-green-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {item.isWorking ? "Trabajando" : "No trabajando"}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <RegisterAttendanceButton employeeId={item.employeeId} isWorking={item.isWorking} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {status.map((item: any) => (
+                <div key={item.employeeId} className="p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div>
+                      <p className="font-semibold text-gray-800">{item.lastName}, {item.name}</p>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-xs font-medium mt-1 ${
+                          item.isWorking
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {item.isWorking ? "Trabajando" : "No trabajando"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
                     <RegisterAttendanceButton employeeId={item.employeeId} isWorking={item.isWorking} />
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>

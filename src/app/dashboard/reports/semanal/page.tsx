@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { getEmployeesWithWeeklyTurns } from "@/actions/employeeActions";
 import { PageTitle } from "@/components/PageTitle";
-import { theme } from "@/lib/theme";
 
 interface Turno {
   id: number;
@@ -82,7 +81,7 @@ export default function SemanalReportPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>
+      <div className="p-4 md:p-10 text-center">
         <p>Cargando reporte semanal...</p>
       </div>
     );
@@ -90,8 +89,8 @@ export default function SemanalReportPage() {
 
   if (error || !reportData) {
     return (
-      <div style={{ padding: 40, textAlign: "center" }}>
-        <p style={{ color: "red" }}>{error || "Error al cargar datos"}</p>
+      <div className="p-4 md:p-10 text-center">
+        <p className="text-red-500">{error || "Error al cargar datos"}</p>
       </div>
     );
   }
@@ -104,133 +103,80 @@ export default function SemanalReportPage() {
   const totalWorkDays = employeesWithAttendance.reduce((sum, e) => sum + getUniqueWorkDays(e.turns), 0);
 
   return (
-    <div style={{ padding: 40 }}>
+    <div className="p-4 md:p-10">
       <PageTitle>REPORTE SEMANAL</PageTitle>
-      <p style={{ marginBottom: 8, color: "#666", fontSize: "16px" }}>
+      <p className="mb-2 text-gray-600 text-base md:text-lg">
         Semana: {formatFullDate(reportData.weekStart)} - {formatFullDate(reportData.weekEnd)}
       </p>
-      <p style={{ marginBottom: 24, color: "#666", fontSize: "12px" }}>
+      <p className="mb-6 text-gray-500 text-xs md:text-sm">
         Emitido: {new Date().toLocaleDateString("es-ES")}
       </p>
       
-      <div style={{ marginBottom: 24, padding: 16, backgroundColor: "#f9f9f9", borderRadius: 8 }}>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Empleados activos:</strong> {reportData.employees.length}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Empleados con asistencia:</strong> {employeesWithAttendance.length}
-        </p>
+      <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <p className="m-1"><strong>Empleados activos:</strong> {reportData.employees.length}</p>
+        <p className="m-1"><strong>Empleados con asistencia:</strong> {employeesWithAttendance.length}</p>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
+      <div className="mb-5">
         <a
           href="/api/reports/semanal"
-          style={{
-            textDecoration: "none",
-            padding: "12px 24px",
-            color: "#000",
-            backgroundColor: theme.colors.secondary,
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontSize: "16px",
-            fontWeight: "bold",
-            display: "inline-block",
-          }}
+          className="inline-block px-6 py-3 bg-amber-500 text-neutral-900 rounded-lg cursor-pointer text-base font-bold hover:bg-amber-600 transition-colors no-underline"
         >
           Descargar PDF
         </a>
       </div>
 
-      <div style={{ backgroundColor: "#fff", borderRadius: 8, boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ backgroundColor: theme.colors.primary }}>
-              <th style={thStyleHeaderLeft}>Empleado</th>
-              <th style={thStyleHeader}>Días</th>
-              <th style={thStyleHeader}>Horas trabajadas</th>
-              <th style={thStyleHeader}>Sueldo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {employeesWithAttendance.map((emp) => {
-              const workDays = getUniqueWorkDays(emp.turns);
-              return (
-                <tr key={emp.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={tdStyleLeft}>{emp.lastName} {emp.name}</td>
-                  <td style={tdStyleCenter}>{workDays}</td>
-                  <td style={tdStyleCenter}>{formatMinutes(emp.totalHours * 60)}</td>
-                  <td style={tdStyleCenter}>${emp.weeklySalary.toFixed(2)} ARS</td>
-                </tr>
-              );
-            })}
-            <tr style={{ backgroundColor: "#f5f5f5", fontWeight: "bold" }}>
-              <td style={{ ...tdStyleLeft, backgroundColor: "#e0e0e0" }}>TOTALES</td>
-              <td style={{ ...tdStyleCenter, backgroundColor: "#e0e0e0" }}>{totalWorkDays}</td>
-              <td style={{ ...tdStyleCenter, backgroundColor: "#e0e0e0" }}>{formatMinutes(totalMinutes)}</td>
-              <td style={{ ...tdStyleCenter, backgroundColor: "#e0e0e0" }}>${totalSalary.toFixed(2)} ARS</td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[500px]">
+            <thead>
+              <tr className="bg-amber-500">
+                <th className="p-3 md:p-4 text-left text-gray-800 text-sm font-bold">Empleado</th>
+                <th className="p-3 md:p-4 text-center text-gray-800 text-sm font-bold">Días</th>
+                <th className="p-3 md:p-4 text-center text-gray-800 text-sm font-bold">Horas trabajadas</th>
+                <th className="p-3 md:p-4 text-center text-gray-800 text-sm font-bold">Sueldo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {employeesWithAttendance.map((emp) => {
+                const workDays = getUniqueWorkDays(emp.turns);
+                return (
+                  <tr key={emp.id} className="border-b border-gray-100">
+                    <td className="p-3 md:p-4 text-left text-gray-700 text-sm">{emp.lastName} {emp.name}</td>
+                    <td className="p-3 md:p-4 text-center text-gray-700 text-sm">{workDays}</td>
+                    <td className="p-3 md:p-4 text-center text-gray-700 text-sm">{formatMinutes(emp.totalHours * 60)}</td>
+                    <td className="p-3 md:p-4 text-center text-gray-700 text-sm">${emp.weeklySalary.toFixed(2)} ARS</td>
+                  </tr>
+                );
+              })}
+              <tr className="bg-gray-200 font-bold">
+                <td className="p-3 md:p-4 text-left bg-gray-300">TOTALES</td>
+                <td className="p-3 md:p-4 text-center bg-gray-300">{totalWorkDays}</td>
+                <td className="p-3 md:p-4 text-center bg-gray-300">{formatMinutes(totalMinutes)}</td>
+                <td className="p-3 md:p-4 text-center bg-gray-300">${totalSalary.toFixed(2)} ARS</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {employeesWithoutAttendance.length > 0 && (
-        <div style={{ marginTop: 24, padding: 16, backgroundColor: "#fff3e0", borderRadius: 8, borderLeft: "4px solid" + theme.colors.secondary }}>
-          <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", color: theme.colors.neutral }}>
-            Empleados sin asistencia
-          </h3>
-          <ul style={{ margin: 0, paddingLeft: 20 }}>
+        <div className="mt-6 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
+          <h3 className="m-0 mb-3 text-base text-gray-800 font-semibold">Empleados sin asistencia</h3>
+          <ul className="m-0 pl-5">
             {employeesWithoutAttendance.map((emp) => (
-              <li key={emp.id} style={{ margin: "4px 0", color: theme.colors.neutral }}>
-                {emp.lastName} {emp.name}
-              </li>
+              <li key={emp.id} className="m-1 text-gray-700">{emp.lastName} {emp.name}</li>
             ))}
           </ul>
         </div>
       )}
 
-      <div style={{ marginTop: 24, padding: 16, backgroundColor: "#f9f9f9", borderRadius: 8, borderLeft: "4px solid" + theme.colors.primary }}>
-        <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", color: theme.colors.neutral }}>Resumen</h3>
-        <p style={{ margin: "4px 0", fontSize: "14px" }}>
-          <strong>Total días trabajados:</strong> {totalWorkDays}
-        </p>
-        <p style={{ margin: "4px 0", fontSize: "14px" }}>
-          <strong>Total horas trabajadas:</strong> {formatMinutes(totalMinutes)}
-        </p>
-        <p style={{ margin: "4px 0", fontSize: "14px", fontWeight: "bold" }}>
-          <strong>Sueldo total a pagar:</strong> ${totalSalary.toFixed(2)} ARS
-        </p>
+      <div className="mt-6 p-4 bg-gray-50 rounded-lg border-l-4 border-amber-500">
+        <h3 className="m-0 mb-3 text-base text-gray-800 font-semibold">Resumen</h3>
+        <p className="m-1 text-sm"><strong>Total días trabajados:</strong> {totalWorkDays}</p>
+        <p className="m-1 text-sm"><strong>Total horas trabajadas:</strong> {formatMinutes(totalMinutes)}</p>
+        <p className="m-1 text-sm font-bold"><strong>Sueldo total a pagar:</strong> ${totalSalary.toFixed(2)} ARS</p>
       </div>
     </div>
   );
 }
-
-const thStyleHeader: React.CSSProperties = {
-  padding: "12px 16px",
-  textAlign: "center",
-  color: theme.colors.neutral,
-  fontSize: "14px",
-  fontWeight: "bold",
-};
-
-const thStyleHeaderLeft: React.CSSProperties = {
-  padding: "12px 16px",
-  textAlign: "left",
-  color: theme.colors.neutral,
-  fontSize: "14px",
-  fontWeight: "bold",
-};
-
-const tdStyleLeft: React.CSSProperties = {
-  padding: "12px 16px",
-  textAlign: "left",
-  color: theme.colors.neutral,
-  fontSize: "14px",
-};
-
-const tdStyleCenter: React.CSSProperties = {
-  padding: "12px 16px",
-  textAlign: "center",
-  color: theme.colors.neutral,
-  fontSize: "14px",
-};

@@ -2,14 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaTimes } from "react-icons/fa";
-import { theme } from "@/lib/theme";
 import { createEmployee } from "@/actions";
 
 interface FormData {
   name: string;
   lastName: string;
   hourlyRate: number;
+}
+
+function CloseIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
 }
 
 export function AddEmployeeButton() {
@@ -20,11 +26,9 @@ export function AddEmployeeButton() {
 
   const validateForm = (data: FormData): boolean => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
-    
     if (!data.name.trim()) newErrors.name = "El nombre es requerido";
     if (!data.lastName.trim()) newErrors.lastName = "El apellido es requerido";
     if (data.hourlyRate < 0) newErrors.hourlyRate = "El precio debe ser mayor o igual a 0";
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -37,13 +41,10 @@ export function AddEmployeeButton() {
       lastName: (form.elements.namedItem("lastName") as HTMLInputElement).value,
       hourlyRate: Number((form.elements.namedItem("hourlyRate") as HTMLInputElement).value),
     };
-
     if (!validateForm(data)) return;
-
     setIsSubmitting(true);
     const result = await createEmployee(data);
     setIsSubmitting(false);
-
     if (result.success) {
       form.reset();
       setIsOpen(false);
@@ -63,184 +64,68 @@ export function AddEmployeeButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        style={{
-          backgroundColor: theme.colors.primary,
-          color: theme.colors.neutral,
-          padding: "12px 24px",
-          borderRadius: "8px",
-          border: "none",
-          fontWeight: "600",
-          fontSize: "14px",
-          cursor: "pointer",
-        }}
+        className="bg-amber-500 text-neutral-900 px-4 md:px-6 py-2.5 rounded-lg border-none font-semibold text-sm cursor-pointer hover:bg-amber-600 transition-colors w-full md:w-auto"
       >
         + Agregar Empleado
       </button>
 
       {isOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-          onClick={handleClose}
-        >
-          <div
-            style={{
-              backgroundColor: theme.colors.white,
-              padding: "32px",
-              borderRadius: "12px",
-              width: "100%",
-              maxWidth: "400px",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-              position: "relative",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={handleClose}
-              style={{
-                position: "absolute",
-                top: "16px",
-                right: "16px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#EF4444",
-                fontSize: "20px",
-                padding: "4px",
-              }}
-            >
-              <FaTimes />
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={handleClose}>
+          <div className="bg-white p-6 md:p-8 rounded-xl w-full max-w-md shadow-lg relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={handleClose} className="absolute top-4 right-4 bg-transparent border-none text-red-500 cursor-pointer p-1">
+              <CloseIcon />
             </button>
 
-            <h2 style={{ 
-              color: theme.colors.neutral, 
-              marginTop: 0, 
-              marginBottom: "24px",
-              fontSize: "24px",
-              fontWeight: "bold",
-              textAlign: "center",
-              paddingRight: "24px"
-            }}>
-              Agregar Empleado
-            </h2>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800 mt-0 mb-6 text-center">Agregar Empleado</h2>
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", color: theme.colors.gray[500] }}>
-                  Nombre
-                </label>
+                <label className="block mb-1.5 text-sm text-gray-600">Nombre</label>
                 <input
                   name="name"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: `1px solid ${errors.name ? "#EF4444" : theme.colors.gray[300]}`,
-                    fontSize: "14px",
-                    color: theme.colors.neutral,
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
+                  className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors ${
+                    errors.name ? "border-red-500" : "border-gray-300 focus:border-amber-500"
+                  }`}
                 />
-                {errors.name && (
-                  <p style={{ color: "#EF4444", fontSize: "12px", margin: "4px 0 0 0" }}>
-                    {errors.name}
-                  </p>
-                )}
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", color: theme.colors.gray[500] }}>
-                  Apellido
-                </label>
+                <label className="block mb-1.5 text-sm text-gray-600">Apellido</label>
                 <input
                   name="lastName"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: `1px solid ${errors.lastName ? "#EF4444" : theme.colors.gray[300]}`,
-                    fontSize: "14px",
-                    color: theme.colors.neutral,
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
+                  className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors ${
+                    errors.lastName ? "border-red-500" : "border-gray-300 focus:border-amber-500"
+                  }`}
                 />
-                {errors.lastName && (
-                  <p style={{ color: "#EF4444", fontSize: "12px", margin: "4px 0 0 0" }}>
-                    {errors.lastName}
-                  </p>
-                )}
+                {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
               </div>
 
               <div>
-                <label style={{ display: "block", marginBottom: "6px", fontSize: "14px", color: theme.colors.gray[500] }}>
-                  Precio por Hora ($)
-                </label>
+                <label className="block mb-1.5 text-sm text-gray-600">Precio por Hora ($)</label>
                 <input
                   name="hourlyRate"
                   type="number"
                   min="0"
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: `1px solid ${errors.hourlyRate ? "#EF4444" : theme.colors.gray[300]}`,
-                    fontSize: "14px",
-                    color: theme.colors.neutral,
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
+                  className={`w-full px-3 py-2.5 rounded-lg border text-sm outline-none transition-colors ${
+                    errors.hourlyRate ? "border-red-500" : "border-gray-300 focus:border-amber-500"
+                  }`}
                 />
-                {errors.hourlyRate && (
-                  <p style={{ color: "#EF4444", fontSize: "12px", margin: "4px 0 0 0" }}>
-                    {errors.hourlyRate}
-                  </p>
-                )}
+                {errors.hourlyRate && <p className="text-red-500 text-xs mt-1">{errors.hourlyRate}</p>}
               </div>
 
-              <div style={{ display: "flex", gap: "12px", marginTop: "8px" }}>
+              <div className="flex gap-3 mt-2">
                 <button
                   type="button"
                   onClick={handleClose}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: `1px solid ${theme.colors.gray[300]}`,
-                    backgroundColor: theme.colors.white,
-                    color: theme.colors.neutral,
-                    fontWeight: "600",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
+                  className="flex-1 py-3 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold text-sm cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{
-                    flex: 1,
-                    padding: "12px",
-                    borderRadius: "8px",
-                    border: "none",
-                    backgroundColor: isSubmitting ? theme.colors.gray[300] : theme.colors.primary,
-                    color: theme.colors.neutral,
-                    fontWeight: "600",
-                    fontSize: "14px",
-                    cursor: isSubmitting ? "not-allowed" : "pointer",
-                  }}
+                  className="flex-1 py-3 rounded-lg bg-amber-500 text-neutral-900 font-semibold text-sm cursor-pointer hover:bg-amber-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>

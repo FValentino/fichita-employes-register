@@ -1,5 +1,6 @@
-import { Attendance, AttendanceType } from "../models";
-import { attendanceRepository, employeeRepository, CreateAttendanceDTO, AttendanceFilters, PaginatedResult } from "../repositories";
+import { Attendance, AttendanceType } from "../models/Attendance";
+import { attendanceRepository,  CreateAttendanceDTO, AttendanceFilters, PaginatedResult } from "../repositories/AttendanceRepository";
+import { employeeRepository } from "../repositories/EmployeeRepository";
 
 export class AttendanceService {
   private static instance: AttendanceService | null = null;
@@ -17,26 +18,26 @@ export class AttendanceService {
     return attendanceRepository.findAll();
   }
 
-  public async getById(id: number): Promise<Attendance | null> {
+  public async getById(id: string): Promise<Attendance | null> {
     return attendanceRepository.findById(id);
   }
 
-  public async getByEmployee(employeeId: number): Promise<Attendance[]> {
+  public async getByEmployee(employeeId: string): Promise<Attendance[]> {
     return attendanceRepository.findByEmployee(employeeId);
+  }
+
+  public async getEmployeeTodayAttendances(employeeId: string): Promise<Attendance[]> {
+    return attendanceRepository.findTodayByEmployee(employeeId);
   }
 
   public async getTodayAttendances(): Promise<Attendance[]> {
     return attendanceRepository.findToday();
   }
 
-  public async getEmployeeTodayAttendances(employeeId: number): Promise<Attendance[]> {
-    return attendanceRepository.findTodayByEmployee(employeeId);
-  }
-
   public async record(
     data: Omit<CreateAttendanceDTO, "timestamp"> & { timestamp?: Date }
   ): Promise<Attendance> {
-    const employee = await employeeRepository.findById(data.employee_id);
+    const employee = await employeeRepository.findById(data.employeeId);
     if (!employee) {
       throw new Error("Empleado no encontrado");
     }
@@ -47,14 +48,14 @@ export class AttendanceService {
     const timestamp = data.timestamp || new Date();
 
     if (data.type === AttendanceType.ENTRADA) {
-      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employee_id);
+      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employeeId);
       if (lastRecordToday && lastRecordToday.type === AttendanceType.ENTRADA) {
         throw new Error("Ya existe una entrada sin cerrar. Registra la salida primero.");
       }
     }
 
     if (data.type === AttendanceType.SALIDA) {
-      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employee_id);
+      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employeeId);
       if (!lastRecordToday || lastRecordToday.type === AttendanceType.SALIDA) {
         throw new Error("No se puede registrar SALIDA sin una ENTRADA previa");
       }
@@ -67,26 +68,22 @@ export class AttendanceService {
   }
 
   public async recordEntry(
-    employeeId: number,
-    recordedBy: number,
+    employeeId: string,
     timestamp?: Date
   ): Promise<Attendance> {
     return this.record({
-      employee_id: employeeId,
-      recorded_by: recordedBy,
+      employeeId,
       type: AttendanceType.ENTRADA,
       timestamp,
     });
   }
 
   public async recordExit(
-    employeeId: number,
-    recordedBy: number,
+    employeeId: string,
     timestamp?: Date
   ): Promise<Attendance> {
     return this.record({
-      employee_id: employeeId,
-      recorded_by: recordedBy,
+      employeeId,
       type: AttendanceType.SALIDA,
       timestamp,
     });
@@ -113,7 +110,7 @@ export class AttendanceService {
     return attendanceRepository.findWeekEntries(startOfWeek, endOfWeek);
   }
 
-  public async getByEmployeeAndDateRange(employeeId: number, startDate: Date, endDate: Date): Promise<Attendance[]> {
+  public async getByEmployeeAndDateRange(employeeId: string, startDate: Date, endDate: Date): Promise<Attendance[]> {
     return attendanceRepository.findByEmployeeAndDateRange(employeeId, startDate, endDate);
   }
 }

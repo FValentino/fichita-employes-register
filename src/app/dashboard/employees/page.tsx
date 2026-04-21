@@ -60,7 +60,7 @@ export default async function EmployeesPage() {
               </tr>
             </thead>
             <tbody>
-              {employees.map((employee: { id: number; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
+              {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
                 <tr
                   key={employee.id}
                   style={{

@@ -12,7 +12,7 @@ interface Turno {
 }
 
 interface AttendanceHistoryProps {
-  employeeId: number;
+  employeeId: string;
   employeeName: string;
   employeeLastName: string;
   hourlyRate: number;

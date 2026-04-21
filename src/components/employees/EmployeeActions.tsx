@@ -6,7 +6,7 @@ import { theme } from "@/lib/theme";
 import { EditEmployeeButton } from "./EditEmployeeButton";
 
 interface Employee {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;

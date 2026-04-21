@@ -5,7 +5,7 @@ import { recordEntry, recordExit } from "@/actions";
 import { theme } from "@/lib/theme";
 
 interface RegisterAttendanceButtonProps {
-  employeeId: number;
+  employeeId: string;
   isWorking: boolean;
 }
 

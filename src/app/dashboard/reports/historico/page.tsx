@@ -6,7 +6,7 @@ import { PageTitle } from "@/components/PageTitle";
 import { theme } from "@/lib/theme";
 
 interface Employee {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
 }
@@ -15,7 +15,7 @@ export default function HistoricoSelectionPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<number | null>(null);
+  const [selectedEmployee, setSelectedEmployee] = useState<string | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
 
@@ -102,7 +102,7 @@ export default function HistoricoSelectionPage() {
           </label>
           <select
             value={selectedEmployee || ""}
-            onChange={(e) => setSelectedEmployee(Number(e.target.value))}
+            onChange={(e) => setSelectedEmployee(e.target.value)}
             style={{
               width: "100%",
               padding: "12px",

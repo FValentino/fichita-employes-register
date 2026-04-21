@@ -7,7 +7,7 @@ import { theme } from "@/lib/theme";
 import { updateEmployee } from "@/actions";
 
 interface Employee {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;

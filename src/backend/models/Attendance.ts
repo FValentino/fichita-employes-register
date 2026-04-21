@@ -1,13 +1,9 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
 } from "typeorm";
-import { Employee } from "./Employee";
-import { User } from "./User";
 
 export enum AttendanceType {
   ENTRADA = "ENTRADA",
@@ -16,14 +12,11 @@ export enum AttendanceType {
 
 @Entity("attendance")
 export class Attendance {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn("uuid", { generated: "uuid" })
+  id!: string;
 
-  @Column()
-  employee_id!: number;
-
-  @Column({ nullable: true })
-  recorded_by!: number | null;
+  @Column("uuid")
+  employeeId!: string;
 
   @Column({
     type: "enum",
@@ -36,13 +29,4 @@ export class Attendance {
 
   @CreateDateColumn()
   created_at!: Date;
-
-
-  @ManyToOne(() => Employee, (employee) => employee.attendances)
-  @JoinColumn({ name: "employee_id" })
-  employee!: Employee;
-
-  @ManyToOne(() => User, (user) => user.attendances, { nullable: true })
-  @JoinColumn({ name: "recorded_by" })
-  recordedBy!: User;
 }

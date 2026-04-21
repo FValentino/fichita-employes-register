@@ -1,6 +1,6 @@
 "use server";
 
-import { employeeService } from "@/backend/services";
+import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
 
@@ -53,7 +53,7 @@ export async function getEmployees() {
   }
 }
 
-export async function getEmployee(id: number) {
+export async function getEmployee(id: string) {
   try {
     await waitForDb();
     const employee = await employeeService.getById(id);
@@ -87,7 +87,7 @@ export async function createEmployee(data: CreateEmployeeDTO) {
   }
 }
 
-export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
+export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
   try {
     await waitForDb();
     const formattedData = formatEmployeeData(data) as UpdateEmployeeDTO;
@@ -101,7 +101,7 @@ export async function updateEmployee(id: number, data: UpdateEmployeeDTO) {
   }
 }
 
-export async function deleteEmployee(id: number) {
+export async function deleteEmployee(id: string) {
   try {
     await waitForDb();
     const deleted = await employeeService.delete(id);
@@ -112,7 +112,7 @@ export async function deleteEmployee(id: number) {
 }
 
 export interface EmployeeWithTurns {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;
@@ -144,7 +144,7 @@ export async function getEmployeesWithWeeklyTurns() {
     sunday.setDate(monday.getDate() + 6);
     sunday.setHours(23, 59, 59, 999);
 
-    const { attendanceService } = await import("@/backend/services");
+    const { attendanceService } = await import("@/backend/services/AttendanceService");
 
     for (const emp of employees) {
       const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, monday, sunday);
@@ -226,7 +226,7 @@ export async function getEmployeesWithMonthlyTurns() {
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    const { attendanceService } = await import("@/backend/services");
+    const { attendanceService } = await import("@/backend/services/AttendanceService");
 
     for (const emp of employees) {
       const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);
@@ -310,7 +310,7 @@ export async function getEmployeesWithMonthlyTurnsForPeriod(month?: number, year
     const firstDay = new Date(targetYear, targetMonth - 1, 1);
     const lastDay = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
 
-    const { attendanceService } = await import("@/backend/services");
+    const { attendanceService } = await import("@/backend/services/AttendanceService");
 
     for (const emp of employees) {
       const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);

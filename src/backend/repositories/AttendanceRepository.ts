@@ -1,16 +1,15 @@
 import { Repository, MoreThanOrEqual, LessThan, Between } from "typeorm";
-import { Attendance, AttendanceType } from "../models";
+import { Attendance, AttendanceType } from "../models/Attendance";
 import { AppDataSource } from "../datasource";
 
 export interface CreateAttendanceDTO {
-  employee_id: number;
-  recorded_by?: number | null;
+  employeeId: string;
   type: AttendanceType;
   timestamp: Date;
 }
 
 export interface AttendanceFilters {
-  employeeId?: number;
+  employeeId?: string;
   startDate?: Date;
   endDate?: Date;
 }
@@ -38,30 +37,27 @@ class AttendanceRepository {
     return AttendanceRepository.instance;
   }
 
-  public async findAll(): Promise<Attendance[]> {
+public async findAll(): Promise<Attendance[]> {
     return this.repository.find({
-      relations: ["employee", "recordedBy"],
       order: { timestamp: "DESC" },
     });
   }
 
-  public async findById(id: number): Promise<Attendance | null> {
+public async findById(id: string): Promise<Attendance | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ["employee", "recordedBy"],
     });
   }
 
-  public async findByEmployee(employeeId: number): Promise<Attendance[]> {
+  public async findByEmployee(employeeId: string): Promise<Attendance[]> {
     return this.repository.find({
-      where: { employee_id: employeeId },
-      relations: ["employee", "recordedBy"],
+      where: { employeeId },
       order: { timestamp: "DESC" },
     });
   }
 
   public async findByEmployeeAndDate(
-    employeeId: number,
+    employeeId: string,
     date: Date
   ): Promise<Attendance[]> {
     const startOfDay = new Date(date);
@@ -72,30 +68,28 @@ class AttendanceRepository {
 
     return this.repository.find({
       where: {
-        employee_id: employeeId,
+        employeeId,
         timestamp: Between(startOfDay, endOfDay),
       },
-      relations: ["employee", "recordedBy"],
       order: { timestamp: "ASC" },
     });
   }
 
   public async findByEmployeeAndDateRange(
-    employeeId: number,
+    employeeId: string,
     startDate: Date,
     endDate: Date
   ): Promise<Attendance[]> {
     return this.repository.find({
       where: {
-        employee_id: employeeId,
+        employeeId,
         timestamp: Between(startDate, endDate),
       },
-      relations: ["employee", "recordedBy"],
       order: { timestamp: "ASC" },
     });
   }
 
-  public async findTodayByEmployee(employeeId: number): Promise<Attendance[]> {
+  public async findTodayByEmployee(employeeId: string): Promise<Attendance[]> {
     return this.findByEmployeeAndDate(employeeId, new Date());
   }
 
@@ -110,12 +104,11 @@ class AttendanceRepository {
       where: {
         timestamp: Between(startOfDay, endOfDay),
       },
-      relations: ["employee", "recordedBy"],
       order: { timestamp: "ASC" },
     });
   }
 
-  public async hasEntryToday(employeeId: number): Promise<boolean> {
+public async hasEntryToday(employeeId: string): Promise<boolean> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -124,7 +117,7 @@ class AttendanceRepository {
 
     const entry = await this.repository.findOne({
       where: {
-        employee_id: employeeId,
+        employeeId,
         type: AttendanceType.ENTRADA,
         timestamp: Between(startOfDay, endOfDay),
       },
@@ -133,15 +126,14 @@ class AttendanceRepository {
     return entry !== null;
   }
 
-  public async findLastByEmployee(employeeId: number): Promise<Attendance | null> {
+  public async findLastByEmployee(employeeId: string): Promise<Attendance | null> {
     return this.repository.findOne({
-      where: { employee_id: employeeId },
-      relations: ["employee", "recordedBy"],
+      where: { employeeId },
       order: { timestamp: "DESC" },
     });
   }
 
-  public async findLastByEmployeeToday(employeeId: number): Promise<Attendance | null> {
+  public async findLastByEmployeeToday(employeeId: string): Promise<Attendance | null> {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
@@ -150,10 +142,9 @@ class AttendanceRepository {
 
     return this.repository.findOne({
       where: {
-        employee_id: employeeId,
+        employeeId,
         timestamp: Between(startOfDay, endOfDay),
       },
-      relations: ["employee", "recordedBy"],
       order: { timestamp: "DESC" },
     });
   }
@@ -163,18 +154,16 @@ class AttendanceRepository {
     return this.repository.save(attendance);
   }
 
-  public async findWithFilters(
+public async findWithFilters(
     filters: AttendanceFilters,
     page: number = 1,
     limit: number = 10
   ): Promise<PaginatedResult<Attendance>> {
     const queryBuilder = this.repository
-      .createQueryBuilder("attendance")
-      .leftJoinAndSelect("attendance.employee", "employee")
-      .leftJoinAndSelect("attendance.recordedBy", "recordedBy");
+      .createQueryBuilder("attendance");
 
     if (filters.employeeId) {
-      queryBuilder.andWhere("attendance.employee_id = :employeeId", {
+      queryBuilder.andWhere("attendance.employeeId = :employeeId", {
         employeeId: filters.employeeId,
       });
     }

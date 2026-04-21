@@ -13,7 +13,7 @@ interface Turno {
 }
 
 interface EmployeeSummary {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;

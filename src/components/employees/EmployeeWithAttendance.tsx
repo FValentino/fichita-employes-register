@@ -8,7 +8,7 @@ import { EditEmployeeButton } from "./EditEmployeeButton";
 import { AttendanceHistory } from "@/components/attendance";
 
 interface Employee {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;

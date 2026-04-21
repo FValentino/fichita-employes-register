@@ -21,7 +21,7 @@ interface WeeklyData {
 
 export default function AttendanceDetailPage() {
   const params = useParams();
-  const employeeId = Number(params.id);
+  const employeeId = params.id as string;
   const [weeklyData, setWeeklyData] = useState<WeeklyData | null>(null);
   const [hourlyRate, setHourlyRate] = useState(100);
   const [loading, setLoading] = useState(true);

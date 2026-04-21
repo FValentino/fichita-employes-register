@@ -1,6 +1,5 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
-import { User } from "./models/User";
 import { Employee } from "./models/Employee";
 import { Attendance } from "./models/Attendance";
 import * as dotenv from "dotenv";
@@ -21,7 +20,7 @@ class Database {
       },
       synchronize: true,
       logging: false,
-      entities: [User, Employee, Attendance],
+      entities: [Employee, Attendance],
       migrations: [],
       subscribers: [],
     });

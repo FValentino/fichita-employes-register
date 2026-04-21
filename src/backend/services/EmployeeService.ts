@@ -1,5 +1,5 @@
-import { Employee } from "../models";
-import { employeeRepository } from "../repositories";
+import { Employee } from "../models/Employee";
+import { employeeRepository } from "../repositories/EmployeeRepository";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "../types/employees";
 
 export class EmployeeService {
@@ -18,7 +18,7 @@ export class EmployeeService {
     return employeeRepository.findAll();
   }
 
-  public async getById(id: number): Promise<Employee | null> {
+public async getById(id: string): Promise<Employee | null> {
     return employeeRepository.findById(id);
   }
 
@@ -30,7 +30,7 @@ export class EmployeeService {
     return employeeRepository.create(data);
   }
 
-  public async update(id: number, data: UpdateEmployeeDTO): Promise<Employee | null> {
+public async update(id: string, data: UpdateEmployeeDTO): Promise<Employee | null> {
     const employee = await employeeRepository.findById(id);
     if (!employee) {
       throw new Error("Empleado no encontrado");
@@ -38,7 +38,7 @@ export class EmployeeService {
     return employeeRepository.update(id, data);
   }
 
-  public async delete(id: number): Promise<boolean> {
+  public async delete(id: string): Promise<boolean> {
     const employee = await employeeRepository.findById(id);
     if (!employee) {
       throw new Error("Empleado no encontrado");

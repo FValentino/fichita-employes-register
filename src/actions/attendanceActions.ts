@@ -1,13 +1,13 @@
 "use server";
 
-import { attendanceService } from "@/backend/services";
-import { employeeService } from "@/backend/services";
+import { attendanceService } from "@/backend/services/AttendanceService";
+import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
-import { AttendanceType } from "@/backend/models";
+import { AttendanceType } from "@/backend/models/Attendance";
 
 interface RecordAttendanceParams {
-  employee_id: number;
-  recorded_by?: number | null;
+  employeeId: string;
+  recordedById?: string | null;
   type: AttendanceType;
   timestamp?: Date;
 }
@@ -62,7 +62,7 @@ export async function getAttendances() {
   }
 }
 
-export async function getAttendance(id: number) {
+export async function getAttendance(id: string) {
   try {
     const attendance = await attendanceService.getById(id);
     if (!attendance) {
@@ -74,7 +74,7 @@ export async function getAttendance(id: number) {
   }
 }
 
-export async function getEmployeeAttendances(employeeId: number) {
+export async function getEmployeeAttendances(employeeId: string) {
   try {
     const attendances = await attendanceService.getByEmployee(employeeId);
     return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
@@ -92,7 +92,7 @@ export async function getTodayAttendances() {
   }
 }
 
-export async function getEmployeeTodayAttendances(employeeId: number) {
+export async function getEmployeeTodayAttendances(employeeId: string) {
   try {
     const attendances = await attendanceService.getEmployeeTodayAttendances(employeeId);
     return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
@@ -110,18 +110,18 @@ export async function recordAttendance(data: RecordAttendanceParams) {
   }
 }
 
-export async function recordEntry(employeeId: number, recordedBy?: number | null) {
+export async function recordEntry(employeeId: string, recordedBy?: string | null) {
   return recordAttendance({
-    employee_id: employeeId,
-    recorded_by: recordedBy ?? null,
+    employeeId,
+    recordedById: recordedBy ?? null,
     type: AttendanceType.ENTRADA,
   });
 }
 
-export async function recordExit(employeeId: number, recordedBy?: number | null) {
+export async function recordExit(employeeId: string, recordedBy?: string | null) {
   return recordAttendance({
-    employee_id: employeeId,
-    recorded_by: recordedBy ?? null,
+    employeeId,
+    recordedById: recordedBy ?? null,
     type: AttendanceType.SALIDA,
   });
 }
@@ -164,7 +164,7 @@ export async function getAttendanceStatus() {
 }
 
 export interface AttendanceQueryFilters {
-  employeeId?: number;
+  employeeId?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -242,7 +242,7 @@ export interface Turno {
   isOpen: boolean;
 }
 
-export async function getEmployeeWeeklyTurns(employeeId: number) {
+export async function getEmployeeWeeklyTurns(employeeId: string) {
   try {
     await waitForDb();
     const today = new Date();
@@ -300,7 +300,7 @@ export async function getEmployeeWeeklyTurns(employeeId: number) {
   }
 }
 
-export async function getEmployeeMonthlyTurns(employeeId: number, month?: number, year?: number) {
+export async function getEmployeeMonthlyTurns(employeeId: string, month?: number, year?: number) {
   try {
     await waitForDb();
     const targetMonth = month ?? new Date().getMonth() + 1;

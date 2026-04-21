@@ -1,17 +1,15 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
+  PrimaryColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
 } from "typeorm";
-import { Attendance } from "./Attendance";
 
 @Entity("employees")
 export class Employee {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryColumn("uuid", { generated: "uuid" })
+  id!: string;
 
   @Column()
   name!: string;
@@ -33,7 +31,4 @@ export class Employee {
 
   @UpdateDateColumn()
   updatedAt!: Date;
-
-  @OneToMany(() => Attendance, (attendance) => attendance.employee)
-  attendances!: Attendance[];
 }

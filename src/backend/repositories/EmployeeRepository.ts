@@ -1,5 +1,5 @@
 import { Repository } from "typeorm";
-import { Employee } from "../models";
+import { Employee } from "../models/Employee";
 import { AppDataSource } from "../datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "../types/employees";
 
@@ -22,7 +22,7 @@ class EmployeeRepository {
     return this.repository.find();
   }
 
-  public async findById(id: number): Promise<Employee | null> {
+public async findById(id: string): Promise<Employee | null> {
     return this.repository.findOne({ where: { id } });
   }
 
@@ -35,12 +35,12 @@ class EmployeeRepository {
     return this.repository.save(employee);
   }
 
-  public async update(id: number, data: UpdateEmployeeDTO): Promise<Employee | null> {
+public async update(id: string, data: UpdateEmployeeDTO): Promise<Employee | null> {
     await this.repository.update(id, data);
     return this.findById(id);
   }
 
-  public async delete(id: number): Promise<boolean> {
+  public async delete(id: string): Promise<boolean> {
     const result = await this.repository.delete(id);
     return (result.affected ?? 0) > 0;
   }

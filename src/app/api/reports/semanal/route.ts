@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { getEmployeesWithWeeklyTurns } from "@/actions/employeeActions";
 import { waitForDb } from "@/backend/datasource";
 
+export const dynamic = "force-dynamic";
+
 function formatMinutes(minutes: number): string {
   if (minutes < 60) {
     return `${Math.round(minutes)} min`;

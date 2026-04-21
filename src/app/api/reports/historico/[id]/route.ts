@@ -3,6 +3,8 @@ import { getEmployee } from "@/actions/employeeActions";
 import { getEmployeeMonthlyTurns } from "@/actions/attendanceActions";
 import { waitForDb } from "@/backend/datasource";
 
+export const dynamic = "force-dynamic";
+
 function formatMinutes(minutes: number): string {
   if (minutes < 60) {
     return `${Math.round(minutes)} min`;
@@ -61,21 +63,20 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await waitForDb();
+await waitForDb();
     
     const { id } = await params;
-    const employeeId = parseInt(id);
 
     const { searchParams } = new URL(request.url);
     const month = parseInt(searchParams.get("month") || String(new Date().getMonth() + 1));
     const year = parseInt(searchParams.get("year") || String(new Date().getFullYear()));
 
-    const empResult = await getEmployee(employeeId);
+    const empResult = await getEmployee(id);
     if (!empResult.success || !empResult.data) {
       return NextResponse.json({ error: "Empleado no encontrado" }, { status: 404 });
     }
 
-    const turnsResult = await getEmployeeMonthlyTurns(employeeId, month, year);
+    const turnsResult = await getEmployeeMonthlyTurns(id, month, year);
     if (!turnsResult.success) {
       console.error("Error getting turns:", turnsResult.error);
       return NextResponse.json({ error: "No se pudieron obtener los turnos: " + turnsResult.error }, { status: 500 });

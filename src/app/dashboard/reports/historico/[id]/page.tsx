@@ -8,7 +8,7 @@ import { PageTitle } from "@/components/PageTitle";
 import { theme } from "@/lib/theme";
 
 interface EmployeeData {
-  id: number;
+  id: string;
   name: string;
   lastName: string;
   hourlyRate: number;
@@ -102,9 +102,9 @@ function HistoricoContent() {
       return;
     }
 
-    const empId = parseInt(employeeIdParam);
-    const month = parseInt(monthParam);
-    const year = parseInt(yearParam);
+const empId = employeeIdParam;
+    const month = parseInt(monthParam || String(new Date().getMonth() + 1));
+    const year = parseInt(yearParam || String(new Date().getFullYear()));
 
     async function fetchData() {
       setLoading(true);

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { RegisterAttendanceButton } from "@/components/attendance";
 import { getAttendanceStatus } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";

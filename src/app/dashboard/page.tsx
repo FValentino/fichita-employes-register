@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getDashboardStats } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";
 

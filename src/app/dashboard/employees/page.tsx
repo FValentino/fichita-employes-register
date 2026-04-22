@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { AddEmployeeButton, EmployeeActions } from "@/components/employees";
 import { getEmployees } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";

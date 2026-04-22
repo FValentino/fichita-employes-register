@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { attendanceService } from "@/backend/services/AttendanceService";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
@@ -104,6 +105,8 @@ export async function getEmployeeTodayAttendances(employeeId: string) {
 export async function recordAttendance(data: RecordAttendanceParams) {
   try {
     const attendance = await attendanceService.record(data);
+    revalidatePath("/dashboard/attendance");
+    revalidatePath("/dashboard");
     return { success: true, data: toPlainAttendanceWithEmployee(attendance) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
@@ -111,19 +114,29 @@ export async function recordAttendance(data: RecordAttendanceParams) {
 }
 
 export async function recordEntry(employeeId: string, recordedBy?: string | null) {
-  return recordAttendance({
+  const result = await recordAttendance({
     employeeId,
     recordedById: recordedBy ?? null,
     type: AttendanceType.ENTRADA,
   });
+  if (result.success) {
+    revalidatePath("/dashboard/attendance");
+    revalidatePath("/dashboard");
+  }
+  return result;
 }
 
 export async function recordExit(employeeId: string, recordedBy?: string | null) {
-  return recordAttendance({
+  const result = await recordAttendance({
     employeeId,
     recordedById: recordedBy ?? null,
     type: AttendanceType.SALIDA,
   });
+  if (result.success) {
+    revalidatePath("/dashboard/attendance");
+    revalidatePath("/dashboard");
+  }
+  return result;
 }
 
 export async function getAttendanceStatus() {

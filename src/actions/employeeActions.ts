@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
@@ -81,6 +82,8 @@ export async function createEmployee(data: CreateEmployeeDTO) {
     await waitForDb();
     const formattedData = formatEmployeeData(data) as CreateEmployeeDTO;
     const employee = await employeeService.create(formattedData);
+    revalidatePath("/dashboard/employees");
+    revalidatePath("/dashboard");
     return { success: true, data: toPlainEmployee(employee) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
@@ -95,6 +98,7 @@ export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
     }
+    revalidatePath("/dashboard/employees");
     return { success: true, data: toPlainEmployee(employee) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
@@ -105,6 +109,10 @@ export async function deleteEmployee(id: string) {
   try {
     await waitForDb();
     const deleted = await employeeService.delete(id);
+    if (deleted) {
+      revalidatePath("/dashboard/employees");
+      revalidatePath("/dashboard");
+    }
     return { success: deleted };
   } catch (error) {
     return { success: false, error: (error as Error).message };

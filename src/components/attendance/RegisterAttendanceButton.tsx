@@ -13,10 +13,14 @@ export function RegisterAttendanceButton({ employeeId, isWorking: initialIsWorki
   const [isWorking, setIsWorking] = useState(initialIsWorking);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   const handleRegister = async () => {
+    setError(null);
+    
     startTransition(async () => {
       let result;
+      
       if (isWorking) {
         result = await recordExit(employeeId);
       } else {
@@ -24,33 +28,38 @@ export function RegisterAttendanceButton({ employeeId, isWorking: initialIsWorki
       }
 
       if (!result.success) {
-        alert(result.error || "Error al registrar");
+        setError(result.error || "Error al registrar");
         return;
       }
 
-      // Toggle local state immediately for UI feedback
+      // Solo cambiar estado si fue exitoso
       setIsWorking(!isWorking);
       router.refresh();
     });
   };
 
-  const displayText = isPending 
+  const buttonText = isPending 
     ? "Procesando..." 
     : isWorking 
       ? "Registrar salida" 
       : "Registrar ingreso";
 
   return (
-    <button
-      onClick={handleRegister}
-      disabled={isPending}
-      className={`px-4 py-2 rounded-lg border-none font-semibold text-xs md:text-sm cursor-pointer transition-colors ${
-        isWorking
-          ? "bg-red-500 text-white hover:bg-red-600"
-          : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
-      } ${isPending ? "opacity-50 cursor-not-allowed" : ""}`}
-    >
-      {displayText}
-    </button>
+    <div className="inline-flex flex-col items-end">
+      <button
+        onClick={handleRegister}
+        disabled={isPending}
+        className={`px-4 py-2 rounded-lg border-none font-semibold text-xs md:text-sm cursor-pointer transition-colors ${
+          isWorking
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
+        } ${isPending ? "opacity-50 cursor-not-allowed" : ""}`}
+      >
+        {buttonText}
+      </button>
+      {error && (
+        <span className="text-xs text-red-500 mt-1">{error}</span>
+      )}
+    </div>
   );
 }

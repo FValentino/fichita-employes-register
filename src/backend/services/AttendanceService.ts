@@ -48,15 +48,15 @@ export class AttendanceService {
     const timestamp = data.timestamp || new Date();
 
     if (data.type === AttendanceType.ENTRADA) {
-      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employeeId);
-      if (lastRecordToday && lastRecordToday.type === AttendanceType.ENTRADA) {
+      const lastRecord = await attendanceRepository.findLastByEmployee(data.employeeId);
+      if (lastRecord && lastRecord.type === AttendanceType.ENTRADA) {
         throw new Error("Ya existe una entrada sin cerrar. Registra la salida primero.");
       }
     }
 
     if (data.type === AttendanceType.SALIDA) {
-      const lastRecordToday = await attendanceRepository.findLastByEmployeeToday(data.employeeId);
-      if (!lastRecordToday || lastRecordToday.type === AttendanceType.SALIDA) {
+      const lastRecord = await attendanceRepository.findLastByEmployee(data.employeeId);
+      if (!lastRecord || lastRecord.type === AttendanceType.SALIDA) {
         throw new Error("No se puede registrar SALIDA sin una ENTRADA previa");
       }
     }

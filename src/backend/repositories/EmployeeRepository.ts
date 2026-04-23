@@ -40,9 +40,13 @@ public async update(id: string, data: UpdateEmployeeDTO): Promise<Employee | nul
     return this.findById(id);
   }
 
-  public async delete(id: string): Promise<boolean> {
+public async delete(id: string): Promise<boolean> {
     const result = await this.repository.delete(id);
     return (result.affected ?? 0) > 0;
+  }
+
+  public async updateIsWorking(id: string, isWorking: boolean): Promise<void> {
+    await this.repository.update(id, { isWorking });
   }
 }
 

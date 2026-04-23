@@ -26,6 +26,9 @@ export class Employee {
   @Column({ default: true })
   active!: boolean;
 
+  @Column({ default: false })
+  isWorking!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 

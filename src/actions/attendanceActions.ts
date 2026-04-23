@@ -133,17 +133,20 @@ export async function getAttendanceStatus() {
   try {
     await waitForDb();
     const employees = await employeeService.getActive();
-    const allAttendances = await attendanceService.getAll();
-
+    const attendances = await attendanceService.getAll();
+    
     const plainEmployees = employees.map(toPlainEmployee);
-    const plainAttendances = allAttendances.map(toPlainAttendance);
+    const plainAttendances = attendances.map(toPlainAttendance);
 
     const status = plainEmployees.map((employee: any) => {
+      // Usar isWorking directo del empleado
+      const isWorking = employee.isWorking === true;
+
+      // Obtener último registro para mostrar lastEntry
       const employeeRecords = plainAttendances.filter(
         (a: any) => a.employeeId === employee.id
       );
 
-      // Get the most recent record (any day)
       const lastRecord = employeeRecords.length > 0
         ? employeeRecords.reduce((latest: any, current: any) => {
             const latestTime = new Date(latest.timestamp).getTime();
@@ -151,8 +154,6 @@ export async function getAttendanceStatus() {
             return currentTime > latestTime ? current : latest;
           })
         : null;
-
-      const isWorking = lastRecord?.type === AttendanceType.ENTRADA;
 
       return {
         employeeId: employee.id,

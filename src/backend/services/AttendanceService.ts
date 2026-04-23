@@ -52,6 +52,8 @@ export class AttendanceService {
       if (lastRecord && lastRecord.type === AttendanceType.ENTRADA) {
         throw new Error("Ya existe una entrada sin cerrar. Registra la salida primero.");
       }
+      // Actualizar isWorking a true
+      await employeeRepository.updateIsWorking(data.employeeId, true);
     }
 
     if (data.type === AttendanceType.SALIDA) {
@@ -59,6 +61,8 @@ export class AttendanceService {
       if (!lastRecord || lastRecord.type === AttendanceType.SALIDA) {
         throw new Error("No se puede registrar SALIDA sin una ENTRADA previa");
       }
+      // Actualizar isWorking a false
+      await employeeRepository.updateIsWorking(data.employeeId, false);
     }
 
     return attendanceRepository.create({

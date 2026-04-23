@@ -5,6 +5,7 @@ export interface Employee {
   hourlyRate: number;
   weeklyHours: number;
   active: boolean;
+  isWorking: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

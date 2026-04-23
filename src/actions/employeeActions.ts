@@ -24,6 +24,7 @@ function toPlainEmployee(employee: any) {
     hourlyRate: Number(employee.hourlyRate),
     weeklyHours: Number(employee.weeklyHours),
     active: employee.active,
+    isWorking: employee.isWorking ?? false,
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
   };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { recordEntry, recordExit } from "@/actions";
 
@@ -8,36 +9,48 @@ interface RegisterAttendanceButtonProps {
   isWorking: boolean;
 }
 
-export function RegisterAttendanceButton({ employeeId, isWorking }: RegisterAttendanceButtonProps) {
+export function RegisterAttendanceButton({ employeeId, isWorking: initialIsWorking }: RegisterAttendanceButtonProps) {
+  const [isWorking, setIsWorking] = useState(initialIsWorking);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleRegister = async () => {
-    if (isWorking) {
-      const result = await recordExit(employeeId);
+    startTransition(async () => {
+      let result;
+      if (isWorking) {
+        result = await recordExit(employeeId);
+      } else {
+        result = await recordEntry(employeeId);
+      }
+
       if (!result.success) {
-        alert(result.error || "Error al registrar salida");
+        alert(result.error || "Error al registrar");
         return;
       }
-    } else {
-      const result = await recordEntry(employeeId);
-      if (!result.success) {
-        alert(result.error || "Error al registrar entrada");
-        return;
-      }
-    }
-    router.refresh();
+
+      // Toggle local state immediately for UI feedback
+      setIsWorking(!isWorking);
+      router.refresh();
+    });
   };
+
+  const displayText = isPending 
+    ? "Procesando..." 
+    : isWorking 
+      ? "Registrar salida" 
+      : "Registrar ingreso";
 
   return (
     <button
       onClick={handleRegister}
+      disabled={isPending}
       className={`px-4 py-2 rounded-lg border-none font-semibold text-xs md:text-sm cursor-pointer transition-colors ${
         isWorking
           ? "bg-red-500 text-white hover:bg-red-600"
           : "bg-amber-500 text-neutral-900 hover:bg-amber-600"
-      }`}
+      } ${isPending ? "opacity-50 cursor-not-allowed" : ""}`}
     >
-      {isWorking ? "Registrar salida" : "Registrar ingreso"}
+      {displayText}
     </button>
   );
 }

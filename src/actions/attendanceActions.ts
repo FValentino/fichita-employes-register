@@ -114,47 +114,42 @@ export async function recordAttendance(data: RecordAttendanceParams) {
 }
 
 export async function recordEntry(employeeId: string, recordedBy?: string | null) {
-  const result = await recordAttendance({
+  return recordAttendance({
     employeeId,
     recordedById: recordedBy ?? null,
     type: AttendanceType.ENTRADA,
   });
-  if (result.success) {
-    revalidatePath("/dashboard/attendance");
-    revalidatePath("/dashboard");
-  }
-  return result;
 }
 
 export async function recordExit(employeeId: string, recordedBy?: string | null) {
-  const result = await recordAttendance({
+  return recordAttendance({
     employeeId,
     recordedById: recordedBy ?? null,
     type: AttendanceType.SALIDA,
   });
-  if (result.success) {
-    revalidatePath("/dashboard/attendance");
-    revalidatePath("/dashboard");
-  }
-  return result;
 }
 
 export async function getAttendanceStatus() {
   try {
     await waitForDb();
     const employees = await employeeService.getActive();
-    const todayAttendances = await attendanceService.getTodayAttendances();
+    const allAttendances = await attendanceService.getAll();
 
     const plainEmployees = employees.map(toPlainEmployee);
-    const plainAttendances = todayAttendances.map(toPlainAttendance);
+    const plainAttendances = allAttendances.map(toPlainAttendance);
 
     const status = plainEmployees.map((employee: any) => {
-      const employeeTodayRecords = plainAttendances.filter(
+      const employeeRecords = plainAttendances.filter(
         (a: any) => a.employeeId === employee.id
       );
 
-      const lastRecord = employeeTodayRecords.length > 0
-        ? employeeTodayRecords[employeeTodayRecords.length - 1]
+      // Get the most recent record (any day)
+      const lastRecord = employeeRecords.length > 0
+        ? employeeRecords.reduce((latest: any, current: any) => {
+            const latestTime = new Date(latest.timestamp).getTime();
+            const currentTime = new Date(current.timestamp).getTime();
+            return currentTime > latestTime ? current : latest;
+          })
         : null;
 
       const isWorking = lastRecord?.type === AttendanceType.ENTRADA;

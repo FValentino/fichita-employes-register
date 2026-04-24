@@ -5,6 +5,15 @@ import { attendanceService } from "@/backend/services/AttendanceService";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
 import { AttendanceType } from "@/backend/models/Attendance";
+import type { Attendance, AttendanceWithEmployee, EmployeeBasic, AttendanceStatus, DashboardStats, Turn } from "@/types/attendance";
+
+export type Turno = {
+  id: number;
+  entryTime: Date | null;
+  exitTime: Date | null;
+  isOpen: boolean;
+};
+import type { Employee } from "@/types/employees";
 
 interface RecordAttendanceParams {
   employeeId: string;
@@ -13,36 +22,30 @@ interface RecordAttendanceParams {
   timestamp?: Date;
 }
 
-function toPlainEmployee(employee: any) {
+function toPlainEmployee(employee: any): EmployeeBasic {
   return {
     id: employee.id,
     name: employee.name,
     lastName: employee.lastName,
     hourlyRate: Number(employee.hourlyRate),
-    weeklyHours: Number(employee.weeklyHours),
-    active: employee.active,
-    createdAt: employee.createdAt,
-    updatedAt: employee.updatedAt,
+    isWorking: employee.isWorking,
   };
 }
 
-function toPlainAttendance(attendance: any) {
+function toPlainAttendance(attendance: any): Attendance {
   return {
     id: attendance.id,
     employeeId: attendance.employee_id,
-    recordedBy: attendance.recorded_by,
     type: attendance.type,
     timestamp: attendance.timestamp,
     createdAt: attendance.created_at,
-    employee: attendance.employee ? toPlainEmployee(attendance.employee) : null,
   };
 }
 
-function toPlainAttendanceWithEmployee(attendance: any) {
+function toPlainAttendanceWithEmployee(attendance: any): AttendanceWithEmployee {
   return {
     id: attendance.id,
     employeeId: attendance.employee_id,
-    recordedBy: attendance.recorded_by,
     type: attendance.type,
     timestamp: attendance.timestamp,
     createdAt: attendance.created_at,
@@ -50,12 +53,14 @@ function toPlainAttendanceWithEmployee(attendance: any) {
       id: attendance.employee?.id,
       name: attendance.employee?.name,
       lastName: attendance.employee?.lastName,
+      hourlyRate: Number(attendance.employee?.hourlyRate),
     },
   };
 }
 
-export async function getAttendances() {
+export async function getAttendances(): Promise<{ success: boolean; data?: AttendanceWithEmployee[]; error?: string }> {
   try {
+    await waitForDb();
     const attendances = await attendanceService.getAll();
     return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
   } catch (error) {
@@ -63,8 +68,9 @@ export async function getAttendances() {
   }
 }
 
-export async function getAttendance(id: string) {
+export async function getAttendance(id: string): Promise<{ success: boolean; data?: AttendanceWithEmployee; error?: string }> {
   try {
+    await waitForDb();
     const attendance = await attendanceService.getById(id);
     if (!attendance) {
       return { success: false, error: "Asistencia no encontrada" };
@@ -75,28 +81,31 @@ export async function getAttendance(id: string) {
   }
 }
 
-export async function getEmployeeAttendances(employeeId: string) {
+export async function getEmployeeAttendances(employeeId: string): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    await waitForDb();
     const attendances = await attendanceService.getByEmployee(employeeId);
-    return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
+    return { success: true, data: attendances.map(toPlainAttendance) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function getTodayAttendances() {
+export async function getTodayAttendances(): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    await waitForDb();
     const attendances = await attendanceService.getTodayAttendances();
-    return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
+    return { success: true, data: attendances.map(toPlainAttendance) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function getEmployeeTodayAttendances(employeeId: string) {
+export async function getEmployeeTodayAttendances(employeeId: string): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    await waitForDb();
     const attendances = await attendanceService.getEmployeeTodayAttendances(employeeId);
-    return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
+    return { success: true, data: attendances.map(toPlainAttendance) };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
@@ -129,7 +138,7 @@ export async function recordExit(employeeId: string, recordedBy?: string | null)
   });
 }
 
-export async function getAttendanceStatus() {
+export async function getAttendanceStatus(): Promise<{ success: boolean; data?: AttendanceStatus[]; error?: string }> {
   try {
     await waitForDb();
     const employees = await employeeService.getActive();
@@ -138,17 +147,14 @@ export async function getAttendanceStatus() {
     const plainEmployees = employees.map(toPlainEmployee);
     const plainAttendances = attendances.map(toPlainAttendance);
 
-    const status = plainEmployees.map((employee: any) => {
-      // Usar isWorking directo del empleado
-      const isWorking = employee.isWorking === true;
+    console.log("Empleados:", plainEmployees);
+    console.log("Asistencias:", plainAttendances);
 
-      // Obtener último registro para mostrar lastEntry
-      const employeeRecords = plainAttendances.filter(
-        (a: any) => a.employeeId === employee.id
-      );
+    const status: AttendanceStatus[] = plainEmployees.map((employee) => {
+      const employeeRecords = plainAttendances.filter((a) => a.employeeId === employee.id);
 
       const lastRecord = employeeRecords.length > 0
-        ? employeeRecords.reduce((latest: any, current: any) => {
+        ? employeeRecords.reduce((latest, current) => {
             const latestTime = new Date(latest.timestamp).getTime();
             const currentTime = new Date(current.timestamp).getTime();
             return currentTime > latestTime ? current : latest;
@@ -159,12 +165,12 @@ export async function getAttendanceStatus() {
         employeeId: employee.id,
         name: employee.name,
         lastName: employee.lastName,
-        isWorking,
+        isWorking: employee.isWorking ?? false,
         lastEntry: lastRecord?.type === AttendanceType.ENTRADA ? lastRecord.timestamp : null,
       };
     });
 
-    status.sort((a: any, b: any) => a.lastName.localeCompare(b.lastName));
+    status.sort((a, b) => a.lastName.localeCompare(b.lastName));
 
     return { success: true, data: status };
   } catch (error) {
@@ -172,88 +178,42 @@ export async function getAttendanceStatus() {
   }
 }
 
-export interface AttendanceQueryFilters {
-  employeeId?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
-export async function getAttendanceReport(
-  filters: AttendanceQueryFilters = {},
-  page: number = 1,
-  limit: number = 10
-) {
-  try {
-    const parsedFilters = {
-      employeeId: filters.employeeId,
-      startDate: filters.startDate ? new Date(filters.startDate) : undefined,
-      endDate: filters.endDate ? new Date(filters.endDate) : undefined,
-    };
-
-    const result = await attendanceService.getPaginated(parsedFilters, page, limit);
-    return { 
-      success: true, 
-      data: {
-        ...result,
-        data: result.data.map(toPlainAttendanceWithEmployee)
-      }
-    };
-  } catch (error) {
-    return { success: false, error: (error as Error).message };
-  }
-}
-
-export async function getDashboardStats() {
+export async function getDashboardStats(): Promise<{ success: boolean; data?: DashboardStats; error?: string }> {
   try {
     await waitForDb();
-    const allEmployees = await employeeService.getAll();
-    const activeEmployees = await employeeService.getActive();
-    const todayAttendances = await attendanceService.getTodayAttendances();
+    const employees = await employeeService.getActive();
+    const attendances = await attendanceService.getAll();
 
-    const plainAttendances = todayAttendances.map(toPlainAttendance);
-    const plainActiveEmployees = activeEmployees.map(toPlainEmployee);
+    const plainEmployees = employees.map(toPlainEmployee);
+    const plainAttendances = attendances.map(toPlainAttendance);
 
-    const workingEmployees = plainActiveEmployees.filter((employee: any) => {
-      const employeeRecords = plainAttendances.filter((a: any) => a.employeeId === employee.id);
-      const lastRecord = employeeRecords[employeeRecords.length - 1];
-      return lastRecord?.type === AttendanceType.ENTRADA;
-    });
-
-    const entriesToday = plainAttendances.filter((a: any) => a.type === AttendanceType.ENTRADA).length;
-    const exitsToday = plainAttendances.filter((a: any) => a.type === AttendanceType.SALIDA).length;
-
-    const weekTardanzas = await attendanceService.getWeekEntries();
-    const TARDANZA_HOUR = 9;
-    const tardanzasSemanales = weekTardanzas.filter((entry: any) => {
-      const entryHour = new Date(entry.timestamp).getHours();
-      return entryHour > TARDANZA_HOUR;
-    }).length;
+    const workingEmployees = plainEmployees.filter((e) => e.isWorking === true).length;
+    const entriesToday = plainAttendances.filter((a) => a.type === AttendanceType.ENTRADA).length;
+    const exitsToday = plainAttendances.filter((a) => a.type === AttendanceType.SALIDA).length;
 
     return {
       success: true,
       data: {
-        totalEmployees: allEmployees.length,
-        workingEmployees: workingEmployees.length,
+        totalEmployees: plainEmployees.length,
+        workingEmployees,
         entriesToday,
         exitsToday,
-        tardanzasSemanales,
-      }
+        tardanzasSemanales: 0,
+      },
     };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export interface Turno {
-  id: number;
-  entryTime: Date | null;
-  exitTime: Date | null;
-  isOpen: boolean;
-}
-
-export async function getEmployeeWeeklyTurns(employeeId: string) {
+export async function getEmployeeWeeklyTurns(employeeId: string): Promise<{ success: boolean; data?: { turns: Turn[]; monday: string; sunday: string }; error?: string }> {
   try {
     await waitForDb();
+    const employee = await employeeService.getById(employeeId);
+    if (!employee) {
+      return { success: false, error: "Empleado no encontrado" };
+    }
+
     const today = new Date();
     const dayOfWeek = today.getDay();
     const monday = new Date(today);
@@ -265,30 +225,27 @@ export async function getEmployeeWeeklyTurns(employeeId: string) {
     sunday.setHours(23, 59, 59, 999);
 
     const attendances = await attendanceService.getByEmployeeAndDateRange(employeeId, monday, sunday);
-
     const plainAttendances = attendances.map(toPlainAttendance);
 
-    const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
-    const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+    const entries = plainAttendances.filter((a) => a.type === AttendanceType.ENTRADA);
+    const exits = plainAttendances.filter((a) => a.type === AttendanceType.SALIDA);
 
-    const turns: any[] = [];
-
-    entries.forEach((entry: any, index: number) => {
-      const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+    const turns: Turn[] = [];
+    entries.forEach((entry, index) => {
+      const exit = exits.find((e) => new Date(e.timestamp) > new Date(entry.timestamp));
       turns.push({
         id: index,
         entryTime: entry.timestamp,
-        exitTime: exit ? exit.timestamp : null,
+        exitTime: exit?.timestamp ?? null,
         isOpen: !exit,
       });
     });
 
-    const lastEntry = entries[entries.length - 1];
-    const lastExit = exits[exits.length - 1];
-    if (!lastExit || (lastEntry && new Date(lastEntry.timestamp) > new Date(lastExit.timestamp))) {
-      if (!turns.find((t: any) => t.isOpen)) {
+    if (!turns.find((t) => t.isOpen)) {
+      const lastEntry = entries[entries.length - 1];
+      if (lastEntry) {
         turns.push({
-          id: turns.length,
+          id: -1,
           entryTime: lastEntry.timestamp,
           exitTime: null,
           isOpen: true,
@@ -302,47 +259,54 @@ export async function getEmployeeWeeklyTurns(employeeId: string) {
         turns,
         monday: monday.toISOString(),
         sunday: sunday.toISOString(),
-      }
+      },
     };
   } catch (error) {
     return { success: false, error: (error as Error).message };
   }
 }
 
-export async function getEmployeeMonthlyTurns(employeeId: string, month?: number, year?: number) {
+export async function getEmployeeMonthlyTurns(
+  employeeId: string,
+  month?: number,
+  year?: number
+): Promise<{ success: boolean; data?: { turns: Turn[]; monthStart: string; monthEnd: string }; error?: string }> {
   try {
     await waitForDb();
-    const targetMonth = month ?? new Date().getMonth() + 1;
-    const targetYear = year ?? new Date().getFullYear();
-    
+    const employee = await employeeService.getById(employeeId);
+    if (!employee) {
+      return { success: false, error: "Empleado no encontrado" };
+    }
+
+    const now = new Date();
+    const targetMonth = month ?? now.getMonth() + 1;
+    const targetYear = year ?? now.getFullYear();
+
     const firstDay = new Date(targetYear, targetMonth - 1, 1);
     const lastDay = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
 
     const attendances = await attendanceService.getByEmployeeAndDateRange(employeeId, firstDay, lastDay);
-
     const plainAttendances = attendances.map(toPlainAttendance);
 
-    const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
-    const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
+    const entries = plainAttendances.filter((a) => a.type === AttendanceType.ENTRADA);
+    const exits = plainAttendances.filter((a) => a.type === AttendanceType.SALIDA);
 
-    const turns: any[] = [];
-
-    entries.forEach((entry: any, index: number) => {
-      const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
+    const turns: Turn[] = [];
+    entries.forEach((entry, index) => {
+      const exit = exits.find((e) => new Date(e.timestamp) > new Date(entry.timestamp));
       turns.push({
         id: index,
         entryTime: entry.timestamp,
-        exitTime: exit ? exit.timestamp : null,
+        exitTime: exit?.timestamp ?? null,
         isOpen: !exit,
       });
     });
 
-    const lastEntry = entries[entries.length - 1];
-    const lastExit = exits[exits.length - 1];
-    if (!lastExit || (lastEntry && new Date(lastEntry.timestamp) > new Date(lastExit.timestamp))) {
-      if (!turns.find((t: any) => t.isOpen)) {
+    if (!turns.find((t) => t.isOpen)) {
+      const lastEntry = entries[entries.length - 1];
+      if (lastEntry) {
         turns.push({
-          id: turns.length,
+          id: -1,
           entryTime: lastEntry.timestamp,
           exitTime: null,
           isOpen: true,
@@ -354,9 +318,9 @@ export async function getEmployeeMonthlyTurns(employeeId: string, month?: number
       success: true,
       data: {
         turns,
-        firstDay: firstDay.toISOString(),
-        lastDay: lastDay.toISOString(),
-      }
+        monthStart: firstDay.toISOString(),
+        monthEnd: lastDay.toISOString(),
+      },
     };
   } catch (error) {
     return { success: false, error: (error as Error).message };

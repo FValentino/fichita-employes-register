@@ -80,15 +80,26 @@ export default function ReportsPage() {
     window.location.href = "/dashboard/reports/historico-general";
   };
 
-  const handleDownloadReport = async (type: "semanal" | "mensual") => {
+const handleDownloadReport = async (type: "semanal" | "mensual" | "pago") => {
     setDownloading(true);
     setDownloadType(type);
 
     try {
-      const endpoint = type === "semanal" ? "/api/reports/semanal" : "/api/reports/mensual";
-      const filename = type === "semanal" 
-        ? `reporte_semanal_${formatDate(monday).replace(/\//g, "-")}.pdf`
-        : `reporte_mensual_${getMonthName(currentMonth)}_${currentYear}.pdf`;
+      let endpoint: string;
+      let filename: string;
+
+      if (type === "pago") {
+        endpoint = "/api/reports/semana-pago";
+        const lastMonday = new Date();
+        const dayOfWeek = lastMonday.getDay();
+        lastMonday.setDate(lastMonday.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) - 7);
+        filename = `reporte_semana_pago_${formatDate(lastMonday).replace(/\//g, "-")}.pdf`;
+      } else {
+        endpoint = type === "semanal" ? "/api/reports/semanal" : "/api/reports/mensual";
+        filename = type === "semanal" 
+          ? `reporte_semanal_${formatDate(monday).replace(/\//g, "-")}.pdf`
+          : `reporte_mensual_${getMonthName(currentMonth)}_${currentYear}.pdf`;
+      }
 
       const response = await fetch(endpoint);
 
@@ -131,10 +142,16 @@ export default function ReportsPage() {
           onClick={() => setShowCurrentReportsPopup(true)}
         />
 
-        <ReportCard
+<ReportCard
           title="Histórico General"
           description="Ver el historial de todos los empleados de un mes específico."
           onClick={handleHistoricoGeneralClick}
+        />
+
+        <ReportCard
+          title="Semana de Pago"
+          description="Reporte de la semana pasada para preparar el pago del lunes."
+          onClick={() => handleDownloadReport("pago")}
         />
       </div>
 

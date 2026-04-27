@@ -326,3 +326,72 @@ export async function getEmployeeMonthlyTurns(
     return { success: false, error: (error as Error).message };
   }
 }
+
+export async function getPayweekTurns(employeeId: string): Promise<{ success: boolean; data?: { turns: Turn[]; start: string; end: string }; error?: string }> {
+  try {
+    await waitForDb();
+    const employee = await employeeService.getById(employeeId);
+    if (!employee) {
+      return { success: false, error: "Empleado no encontrado" };
+    }
+
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    
+    // Monday de la semana pasada (hace 7 días desde el lunes actual)
+    const lastMonday = new Date(today);
+    lastMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1) - 7);
+    
+    // Monday de esta semana
+    const thisMonday = new Date(today);
+    thisMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    // Inicio: lunes anterior 10:00
+    const start = new Date(lastMonday);
+    start.setHours(10, 0, 0, 0);
+    
+    // Fin: lunes actual 7:00
+    const end = new Date(thisMonday);
+    end.setHours(7, 0, 0, 0);
+
+    const attendances = await attendanceService.getByEmployeeAndDateRange(employeeId, start, end);
+    const plainAttendances = attendances.map(toPlainAttendance);
+
+    const entries = plainAttendances.filter((a) => a.type === AttendanceType.ENTRADA);
+    const exits = plainAttendances.filter((a) => a.type === AttendanceType.SALIDA);
+
+    const turns: Turn[] = [];
+    entries.forEach((entry, index) => {
+      const exit = exits.find((e) => new Date(e.timestamp) > new Date(entry.timestamp));
+      turns.push({
+        id: index,
+        entryTime: entry.timestamp,
+        exitTime: exit?.timestamp ?? null,
+        isOpen: !exit,
+      });
+    });
+
+    if (!turns.find((t) => t.isOpen)) {
+      const lastEntry = entries[entries.length - 1];
+      if (lastEntry) {
+        turns.push({
+          id: -1,
+          entryTime: lastEntry.timestamp,
+          exitTime: null,
+          isOpen: true,
+        });
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        turns,
+        start: start.toISOString(),
+        end: end.toISOString(),
+      },
+    };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}

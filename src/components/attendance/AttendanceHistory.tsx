@@ -48,9 +48,9 @@ export function AttendanceHistory({
     });
   };
 
-  const formatDateTime = (date: Date | null) => {
+const formatDateTime = (date: Date | null) => {
     if (!date) return "Turno en proceso";
-    return `${formatDate(date)} ${date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${formatDate(date)} ${date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`;
   };
 
   const calculateSalary = () => {

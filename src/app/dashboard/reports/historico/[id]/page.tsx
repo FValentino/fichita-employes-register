@@ -239,11 +239,11 @@ const empId = employeeIdParam;
                 return (
                   <tr key={turn.id} style={{ borderBottom: "1px solid #eee" }}>
                     <td style={tdStyle}>{date.toLocaleDateString("es-ES")}</td>
-                    <td style={tdStyleCenter}>
-                      {turn.entryTime ? new Date(turn.entryTime).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "-"}
+<td style={tdStyleCenter}>
+                      {turn.entryTime ? new Date(turn.entryTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" }) : "-"}
                     </td>
                     <td style={tdStyleCenter}>
-                      {turn.exitTime ? new Date(turn.exitTime).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "-"}
+                      {turn.exitTime ? new Date(turn.exitTime).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" }) : "-"}
                     </td>
                     <td style={tdStyleCenter}>
                       {turn.isOpen ? "Abierto" : formatMinutes(minutes)}

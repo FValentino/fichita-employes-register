@@ -47,10 +47,10 @@ export default function AttendanceDetailPage() {
     });
   };
 
-  const formatDateTime = (dateStr: string | null) => {
+const formatDateTime = (dateStr: string | null) => {
     if (!dateStr) return "Turno en proceso";
     const date = new Date(dateStr);
-    return `${formatDate(dateStr)} ${date.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+    return `${formatDate(dateStr)} ${date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`;
   };
 
   const calculateSalary = () => {

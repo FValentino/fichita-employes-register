@@ -23,6 +23,9 @@ class Database {
       entities: [Employee, Attendance],
       migrations: [],
       subscribers: [],
+      extra: {
+        options: "-c timezone=America/Argentina/Buenos_Aires",
+      },
     });
     this.initPromise = this.initialize();
   }

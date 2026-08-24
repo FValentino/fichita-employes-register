@@ -37,8 +37,8 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
     router.push(`/dashboard/attendance/${employee.id}`);
   };
 
-  const actionButtons = (
-    <>
+  return (
+    <div className="flex gap-2 flex-wrap">
       <EditEmployeeButton employee={employee} />
       <AssignTurnsButton employee={employee} />
       <InviteEmployeeButton employee={employee} />
@@ -54,20 +54,6 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
       >
         Ver asistencia
       </button>
-    </>
-  );
-
-  return (
-    <>
-      {/* Mobile */}
-      <div className="flex gap-2 justify-end md:hidden">
-        {actionButtons}
-      </div>
-
-      {/* Desktop */}
-      <td className="hidden md:table-cell p-4 text-center">
-        {actionButtons}
-      </td>
-    </>
+    </div>
   );
 }

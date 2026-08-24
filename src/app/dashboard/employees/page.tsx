@@ -58,7 +58,9 @@ export default async function EmployeesPage() {
                           {employee.authUserId ? "Vinculado" : "Sin cuenta"}
                         </span>
                       </td>
-                      <EmployeeActions employee={employee} />
+                      <td className="p-4">
+                        <EmployeeActions employee={employee} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

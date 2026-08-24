@@ -31,6 +31,12 @@ interface RecordAttendanceInput {
   type: AttendanceType;
   /** Single-use step-up token; required for non-admin self-service. */
   stepUpToken?: string;
+  /** Device info captured from the client for audit trail. */
+  deviceInfo?: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null;
 }
 
 export interface ActionResult {
@@ -123,6 +129,7 @@ function toPlainAttendance(attendance: any): Attendance {
     type: attendance.type,
     timestamp: attendance.timestamp,
     createdAt: attendance.created_at,
+    deviceInfo: attendance.deviceInfo ?? null,
   };
 }
 
@@ -211,6 +218,7 @@ export async function recordAttendance(
     const attendance = await attendanceService.record({
       employeeId: authorization.employeeId,
       type: data.type,
+      deviceInfo: data.deviceInfo,
     });
     revalidatePath("/dashboard/attendance");
     revalidatePath("/dashboard");
@@ -227,9 +235,14 @@ export async function recordAttendance(
  */
 export async function recordEntry(
   employeeId: string,
-  stepUpToken?: string
+  stepUpToken?: string,
+  deviceInfo?: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null
 ): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
-  return recordAttendance({ employeeId, type: AttendanceType.ENTRADA, stepUpToken });
+  return recordAttendance({ employeeId, type: AttendanceType.ENTRADA, stepUpToken, deviceInfo });
 }
 
 /**
@@ -237,9 +250,14 @@ export async function recordEntry(
  */
 export async function recordExit(
   employeeId: string,
-  stepUpToken?: string
+  stepUpToken?: string,
+  deviceInfo?: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null
 ): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
-  return recordAttendance({ employeeId, type: AttendanceType.SALIDA, stepUpToken });
+  return recordAttendance({ employeeId, type: AttendanceType.SALIDA, stepUpToken, deviceInfo });
 }
 
 /**

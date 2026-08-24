@@ -27,6 +27,13 @@ export class Attendance {
   @Column({ type: "timestamptz" })
   timestamp!: Date;
 
+  @Column({ type: "jsonb", nullable: true })
+  deviceInfo!: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null;
+
   @CreateDateColumn()
   created_at!: Date;
 }

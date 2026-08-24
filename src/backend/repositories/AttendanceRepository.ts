@@ -6,6 +6,11 @@ export interface CreateAttendanceDTO {
   employeeId: string;
   type: AttendanceType;
   timestamp: Date;
+  deviceInfo?: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null;
 }
 
 export interface AttendanceFilters {

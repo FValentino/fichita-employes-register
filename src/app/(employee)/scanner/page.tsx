@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
 import { recordEntry, recordExit, getEmployeeTodayAttendances, getEmployeeByAuthUserId } from "@/actions";
 import { BiometricGate } from "@/features/biometric-verification";
+import { useFingerprint } from "@/hooks/useFingerprint";
 import { HiCamera, HiCheckCircle, HiArrowLeft } from "react-icons/hi2";
 
 export default function ScannerPage() {
@@ -14,6 +15,7 @@ export default function ScannerPage() {
   const [message, setMessage] = useState("");
   const [lastType, setLastType] = useState<"ENTRADA" | "SALIDA" | null>(null);
   const router = useRouter();
+  const fingerprint = useFingerprint();
 
   const checkStatus = async (id: string) => {
     const result = await getEmployeeTodayAttendances(id);
@@ -57,7 +59,12 @@ export default function ScannerPage() {
     const action = type === "ENTRADA" ? recordEntry : recordExit;
     // Non-admins must present a fresh single-use step-up token; the server
     // consumes it atomically before inserting the record.
-    const result = await action(employeeId, stepUpToken);
+    const deviceInfo = {
+      fingerprint: fingerprint ?? undefined,
+      userAgent: navigator.userAgent,
+      verificationMethod: stepUpToken ? "biometric" as const : "password" as const,
+    };
+    const result = await action(employeeId, stepUpToken, deviceInfo);
 
     if (result.success) {
       setStatus("success");

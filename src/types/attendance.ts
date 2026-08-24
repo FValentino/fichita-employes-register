@@ -5,6 +5,11 @@ export interface Attendance {
   timestamp: Date;
   createdAt: Date;
   employee?: EmployeeBasic;
+  deviceInfo?: {
+    fingerprint?: string;
+    userAgent?: string;
+    verificationMethod?: "biometric" | "password";
+  } | null;
 }
 
 export interface AttendanceWithEmployee extends Attendance {

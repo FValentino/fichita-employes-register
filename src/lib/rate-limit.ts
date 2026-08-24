@@ -1,0 +1,77 @@
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
+
+const store = new Map<string, RateLimitEntry>();
+
+// Cleanup old entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of store.entries()) {
+    if (now > entry.resetAt) {
+      store.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
+export interface RateLimitConfig {
+  windowMs: number; // Time window in milliseconds
+  maxRequests: number; // Max requests per window
+}
+
+export function checkRateLimit(
+  key: string,
+  config: RateLimitConfig
+): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  const entry = store.get(key);
+
+  if (!entry || now > entry.resetAt) {
+    // New window
+    store.set(key, {
+      count: 1,
+      resetAt: now + config.windowMs,
+    });
+    return {
+      allowed: true,
+      remaining: config.maxRequests - 1,
+      resetAt: now + config.windowMs,
+    };
+  }
+
+  if (entry.count >= config.maxRequests) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: entry.resetAt,
+    };
+  }
+
+  entry.count++;
+  return {
+    allowed: true,
+    remaining: config.maxRequests - entry.count,
+    resetAt: entry.resetAt,
+  };
+}
+
+export function getClientIp(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
+  return "unknown";
+}
+
+// Preset configurations
+export const RATE_LIMITS = {
+  // Auth endpoints: 5 requests per minute
+  auth: { windowMs: 60 * 1000, maxRequests: 5 },
+  // Attendance: 30 requests per minute (frequent check-ins)
+  attendance: { windowMs: 60 * 1000, maxRequests: 30 },
+  // QR verify: 20 requests per minute
+  qr: { windowMs: 60 * 1000, maxRequests: 20 },
+  // General API: 60 requests per minute
+  general: { windowMs: 60 * 1000, maxRequests: 60 },
+} as const;

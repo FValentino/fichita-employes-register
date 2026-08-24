@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEmployeesWithMonthlyTurnsForPeriod } from "@/actions/employeeActions";
 import { waitForDb } from "@/backend/datasource";
+import { withRateLimit, RATE_LIMITS } from "@/lib/api-middleware";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,11 @@ function getDaysInMonth(month: number, year: number): { first: Date; last: Date 
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimit = withRateLimit(request, RATE_LIMITS.general, "reports:historico");
+  if (!rateLimit.allowed) {
+    return rateLimit.response;
+  }
+
   try {
     await waitForDb();
     

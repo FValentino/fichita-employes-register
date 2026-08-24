@@ -90,14 +90,22 @@ export default function AttendanceDetailPage() {
 
   const toLocalDatetimeString = (dateStr: string | Date) => {
     const d = new Date(dateStr);
-    // Convert to Argentina time for the input
-    const arTime = new Date(d.getTime() + (3 * 60 * 60 * 1000));
-    const yyyy = arTime.getUTCFullYear();
-    const mm = String(arTime.getUTCMonth() + 1).padStart(2, "0");
-    const dd = String(arTime.getUTCDate()).padStart(2, "0");
-    const hh = String(arTime.getUTCHours()).padStart(2, "0");
-    const mi = String(arTime.getUTCMinutes()).padStart(2, "0");
-    return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
+    // Format as Argentina time for the input fields
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Argentina/Buenos_Aires",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(d);
+
+    const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+    return {
+      date: `${get("year")}-${get("month")}-${get("day")}`,
+      time: `${get("hour")}:${get("minute")}`,
+    };
   };
 
   const handleEdit = (att: AttendanceRecord) => {
@@ -111,11 +119,20 @@ export default function AttendanceDetailPage() {
     if (!editingId || !editDate || !editTime) return;
 
     setSaving(true);
-    // Combine date and time in Argentina timezone, convert to UTC
+    // Parse the date/time inputs as Argentina local time
     const [year, month, day] = editDate.split("-").map(Number);
     const [hours, minutes] = editTime.split(":").map(Number);
-    // Argentina is UTC-3
-    const utcDate = new Date(Date.UTC(year, month - 1, day, hours + 3, minutes, 0, 0));
+    
+    // Create a date string and parse it as Argentina time
+    // We use a trick: create the date, then adjust for timezone difference
+    const localDate = new Date(year, month - 1, day, hours, minutes);
+    
+    // Get the timezone offset for Argentina (should be -180 minutes = -3 hours)
+    const arOffset = -180; // Argentina is always UTC-3 (no DST)
+    const localOffset = localDate.getTimezoneOffset(); // Server's offset in minutes
+    
+    // Convert to UTC: local time + (local offset - ar offset)
+    const utcDate = new Date(localDate.getTime() + (localOffset + arOffset) * 60 * 1000);
 
     const result = await updateAttendanceTimestamp(editingId, utcDate);
 

@@ -45,9 +45,9 @@ export class AttendanceService {
       throw new Error("El empleado no está activo");
     }
 
-    const now = new Date();
-    // Usar hora actual del servidor ajustada a timezone Argentina
-    const timestamp = new Date(now.getTime() - (3 * 60 * 60 * 1000));
+    // Use current server time. PostgreSQL timestamptz stores in UTC
+    // and converts to client timezone on display.
+    const timestamp = new Date();
 
     if (data.type === AttendanceType.ENTRADA) {
       const lastRecord = await attendanceRepository.findLastByEmployee(data.employeeId);

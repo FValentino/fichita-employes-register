@@ -43,15 +43,21 @@ export default async function EmployeesPage() {
                     <th className="p-4 text-center text-gray-500 text-sm font-medium">Apellido</th>
                     <th className="p-4 text-center text-gray-500 text-sm font-medium">Nombre</th>
                     <th className="p-4 text-center text-gray-500 text-sm font-medium">Horas Semanales</th>
+                    <th className="p-4 text-center text-gray-500 text-sm font-medium">Estado</th>
                     <th className="p-4 text-center text-gray-500 text-sm font-medium">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }, index: number) => (
+                  {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number; email?: string | null; authUserId?: string | null }, index: number) => (
                     <tr key={employee.id} className={index > 0 ? "border-t border-gray-200" : ""}>
                       <td className="p-4 text-center text-gray-700 text-sm">{employee.lastName}</td>
                       <td className="p-4 text-center text-gray-700 text-sm">{employee.name}</td>
                       <td className="p-4 text-center text-gray-700 text-sm">{employee.weeklyHours} hs</td>
+                      <td className="p-4 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${employee.authUserId ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                          {employee.authUserId ? "Vinculado" : "Sin cuenta"}
+                        </span>
+                      </td>
                       <EmployeeActions employee={employee} />
                     </tr>
                   ))}
@@ -61,13 +67,16 @@ export default async function EmployeesPage() {
 
             {/* Mobile cards */}
             <div className="md:hidden divide-y divide-gray-200">
-              {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number }) => (
+              {employees.map((employee: { id: string; name: string; lastName: string; hourlyRate: number; weeklyHours: number; email?: string | null; authUserId?: string | null }) => (
                 <div key={employee.id} className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div>
                       <p className="font-semibold text-gray-800">{employee.lastName}, {employee.name}</p>
                       <p className="text-sm text-gray-500">{employee.weeklyHours} horas semanales</p>
                     </div>
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${employee.authUserId ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {employee.authUserId ? "Vinculado" : "Sin cuenta"}
+                    </span>
                   </div>
                   <EmployeeActions employee={employee} />
                 </div>

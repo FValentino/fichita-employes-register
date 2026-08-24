@@ -4,12 +4,15 @@ import { useRouter } from "next/navigation";
 import { deleteEmployee } from "@/actions";
 import { EditEmployeeButton } from "./EditEmployeeButton";
 import { AssignTurnsButton } from "./AssignTurnsButton";
+import { InviteEmployeeButton } from "./InviteEmployeeButton";
 
 interface Employee {
   id: string;
   name: string;
   lastName: string;
   hourlyRate: number;
+  email?: string | null;
+  authUserId?: string | null;
 }
 
 interface EmployeeActionsProps {
@@ -41,6 +44,7 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
         <div className="flex gap-2 justify-end">
           <EditEmployeeButton employee={employee} />
           <AssignTurnsButton employee={employee} />
+          <InviteEmployeeButton employee={employee} />
           <button
             onClick={handleDelete}
             className="px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
@@ -60,6 +64,7 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
       <td className="hidden md:table-cell p-4 text-center">
         <EditEmployeeButton employee={employee} />
         <AssignTurnsButton employee={employee} />
+        <InviteEmployeeButton employee={employee} />
         <button
           onClick={handleDelete}
           className="mx-1 px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"

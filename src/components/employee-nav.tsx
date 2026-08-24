@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 import {
   HiHome,
   HiOutlineHome,
-  HiCamera,
-  HiOutlineCamera,
+  HiFingerPrint,
+  HiOutlineFingerPrint,
   HiClock,
   HiOutlineClock,
   HiDocumentText,
@@ -17,7 +17,7 @@ import {
 
 const tabs = [
   { href: "/home", label: "Inicio", icon: HiOutlineHome, activeIcon: HiHome },
-  { href: "/scanner", label: "Escanear", icon: HiOutlineCamera, activeIcon: HiCamera },
+  { href: "/scanner", label: "Asistencia", icon: HiOutlineFingerPrint, activeIcon: HiFingerPrint },
   { href: "/hours", label: "Horas", icon: HiOutlineClock, activeIcon: HiClock },
   { href: "/justifications", label: "Justificaciones", icon: HiOutlineDocumentText, activeIcon: HiDocumentText },
   { href: "/profile", label: "Perfil", icon: HiOutlineUser, activeIcon: HiUser },

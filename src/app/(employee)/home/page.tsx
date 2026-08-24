@@ -8,6 +8,7 @@ import { getEmployeeByAuthUserId } from "@/actions";
 import { PasskeyEnrollment } from "@/features/biometric-verification/components/PasskeyEnrollment";
 import {
   HiClock,
+  HiFingerPrint,
   HiDocumentText,
   HiArrowRightOnRectangle,
   HiArrowLeftOnRectangle,
@@ -141,7 +142,7 @@ export default function HomePage() {
             href="/scanner"
             className="bg-amber-500 text-neutral-900 p-6 rounded-xl font-semibold text-center hover:bg-amber-600 transition-colors text-decoration-none"
           >
-            <HiClock className="w-8 h-8 mx-auto mb-2" />
+            <HiFingerPrint className="w-8 h-8 mx-auto mb-2" />
             Registrar Asistencia
           </Link>
 

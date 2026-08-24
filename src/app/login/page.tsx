@@ -18,7 +18,7 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const { error: supabaseError } = await supabase.auth.signInWithPassword({
+    const { data, error: supabaseError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -26,10 +26,24 @@ export default function LoginPage() {
     if (supabaseError) {
       setError(supabaseError.message);
       setLoading(false);
-    } else {
-      router.push("/dashboard");
-      router.refresh();
+      return;
     }
+
+    // Look up employee role to determine redirect destination
+    try {
+      const res = await fetch(`/api/employee/role?authUserId=${data.user.id}`);
+      if (res.ok) {
+        const { role } = await res.json();
+        // Store role in cookie for middleware to read
+        document.cookie = `fichita-role=${role}; path=/; max-age=86400; SameSite=Lax`;
+        router.push(role === "admin" ? "/dashboard" : "/home");
+      } else {
+        router.push("/home");
+      }
+    } catch {
+      router.push("/home");
+    }
+    router.refresh();
   };
 
   return (

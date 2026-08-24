@@ -1,3 +1,5 @@
+import { UserRole } from "../models/Employee";
+
 export interface Employee {
   id: number;
   name: string;
@@ -7,6 +9,7 @@ export interface Employee {
   active: boolean;
   email: string | null;
   authUserId: string | null;
+  role: UserRole;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +20,7 @@ export interface CreateEmployeeDTO {
   hourlyRate?: number;
   weeklyHours?: number;
   email?: string;
+  role?: UserRole;
 }
 
 export interface UpdateEmployeeDTO {
@@ -27,4 +31,5 @@ export interface UpdateEmployeeDTO {
   active?: boolean;
   email?: string;
   authUserId?: string;
+  role?: UserRole;
 }

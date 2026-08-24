@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
+import { getEmployeeByAuthUserId } from "@/actions";
 import { HiArrowLeft, HiArrowRightOnRectangle, HiUser } from "react-icons/hi2";
 
 interface EmployeeData {
   name: string;
   lastName: string;
   email: string;
+  role: string;
 }
 
 export default function ProfilePage() {
@@ -18,13 +20,25 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const supabase = createSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        setEmployee({
-          name: "Empleado",
-          lastName: "",
-          email: data.user.email ?? "",
-        });
+        const result = await getEmployeeByAuthUserId(data.user.id);
+        if (result.success && result.data) {
+          setEmployee({
+            name: result.data.name,
+            lastName: result.data.lastName,
+            email: result.data.email ?? data.user.email ?? "",
+            role: result.data.role ?? "employee",
+          });
+        } else {
+          // Fallback to Supabase user data
+          setEmployee({
+            name: "Empleado",
+            lastName: "",
+            email: data.user.email ?? "",
+            role: "employee",
+          });
+        }
       } else {
         router.push("/login");
       }
@@ -35,6 +49,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     const supabase = createSupabaseClient();
     await supabase.auth.signOut();
+    // Clear role cookie
+    document.cookie = "fichita-role=; path=/; max-age=0";
     router.push("/login");
   };
 
@@ -87,7 +103,7 @@ export default function ProfilePage() {
             </div>
             <div className="flex justify-between items-center py-2 border-b border-gray-100">
               <span className="text-gray-600">Rol</span>
-              <span className="text-gray-800 font-medium">Empleado</span>
+              <span className="text-gray-800 font-medium">{employee?.role === "admin" ? "Administrador" : "Empleado"}</span>
             </div>
           </div>
         </div>

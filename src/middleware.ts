@@ -6,6 +6,13 @@ const DEFAULT_ORIGINS = [
   "http://localhost:8081",
 ];
 
+function getSupabaseCookieName(): string {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  const match = url.match(/^https?:\/\/([a-z0-9]+)\./);
+  const projectId = match?.[1] ?? "dzvlapvemyyyppcdrnnn";
+  return `sb-${projectId}-auth-token`;
+}
+
 function getAllowedOrigins(): string[] {
   const envOrigins = process.env.MOBILE_CORS_ORIGINS;
   if (envOrigins) {
@@ -54,8 +61,8 @@ export function middleware(request: NextRequest) {
     setCorsHeaders(response, origin);
     
     // Continue with auth checks...
-    const supabaseCookie = request.cookies.get("sb-dzvlapvemyyyppcdrnnn-auth-token");
-    const hasSession = !!supabaseCookie;
+    const supabaseCookieName = getSupabaseCookieName();
+    const hasSession = !!request.cookies.get(supabaseCookieName);
     const isApiAuth = pathname.startsWith("/api/auth");
     
     if (!hasSession && !isApiAuth) {
@@ -74,18 +81,20 @@ export function middleware(request: NextRequest) {
   }
 
   // Original middleware logic for non-API routes
-  const supabaseCookie = request.cookies.get("sb-dzvlapvemyyyppcdrnnn-auth-token");
-  const hasSession = !!supabaseCookie;
+  const supabaseCookieName = getSupabaseCookieName();
+  const hasSession = !!request.cookies.get(supabaseCookieName);
+  const role = request.cookies.get("fichita-role")?.value ?? "employee";
 
   const isLoginPage = pathname === "/login";
   const isRoot = pathname === "/";
+  const isDashboardRoute = pathname.startsWith("/dashboard");
   const isEmployeeRoute = ["/home", "/scanner", "/hours", "/justifications", "/profile"].some(
     (route) => pathname === route || pathname.startsWith(route + "/")
   );
 
   if (isRoot) {
     if (hasSession) {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return NextResponse.redirect(new URL(role === "admin" ? "/dashboard" : "/home", request.url));
     }
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -95,11 +104,16 @@ export function middleware(request: NextRequest) {
   }
 
   if (hasSession && isLoginPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL(role === "admin" ? "/dashboard" : "/home", request.url));
   }
 
-  if (hasSession && pathname.startsWith("/dashboard") && isEmployeeRoute) {
+  // Role-based route protection
+  if (hasSession && role === "employee" && isDashboardRoute) {
     return NextResponse.redirect(new URL("/home", request.url));
+  }
+
+  if (hasSession && role === "admin" && isEmployeeRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

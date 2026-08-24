@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseClient } from "@/lib/supabase";
+import { getEmployeeByAuthUserId } from "@/actions";
 import {
   HiClock,
   HiDocumentText,
@@ -25,14 +26,24 @@ export default function HomePage() {
 
   useEffect(() => {
     const supabase = createSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        setEmployee({
-          name: "Empleado",
-          lastName: "",
-          email: data.user.email ?? "",
-          isWorking: false,
-        });
+        const result = await getEmployeeByAuthUserId(data.user.id);
+        if (result.success && result.data) {
+          setEmployee({
+            name: result.data.name,
+            lastName: result.data.lastName,
+            email: result.data.email ?? data.user.email ?? "",
+            isWorking: result.data.isWorking ?? false,
+          });
+        } else {
+          setEmployee({
+            name: "Empleado",
+            lastName: "",
+            email: data.user.email ?? "",
+            isWorking: false,
+          });
+        }
       } else {
         router.push("/login");
       }

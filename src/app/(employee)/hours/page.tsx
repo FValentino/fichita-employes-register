@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
-import { getEmployeeWeeklyTurns, getEmployeeMonthlyTurns, getPayweekTurns } from "@/actions";
+import { getEmployeeWeeklyTurns, getEmployeeMonthlyTurns, getPayweekTurns, getEmployeeByAuthUserId } from "@/actions";
 import { HiArrowLeft } from "react-icons/hi2";
 
 type TimeRange = "week" | "month" | "payweek";
 
 interface Turn {
   id: number;
-  entryTime: string | null;
-  exitTime: string | null;
+  entryTime: Date | null;
+  exitTime: Date | null;
   isOpen: boolean;
 }
 
@@ -26,9 +26,14 @@ export default function HoursPage() {
 
   useEffect(() => {
     const supabase = createSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (data.user) {
-        setEmployeeId(data.user.id);
+        const result = await getEmployeeByAuthUserId(data.user.id);
+        if (result.success && result.data) {
+          setEmployeeId(result.data.id);
+        } else {
+          router.push("/login");
+        }
       } else {
         router.push("/login");
       }
@@ -79,13 +84,13 @@ export default function HoursPage() {
     setLoading(false);
   };
 
-  const formatTime = (dateStr: string | null) => {
+  const formatTime = (dateStr: Date | null) => {
     if (!dateStr) return "--:--";
     const d = new Date(dateStr);
     return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const formatDate = (dateStr: string | null) => {
+  const formatDate = (dateStr: Date | null) => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     return d.toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" });

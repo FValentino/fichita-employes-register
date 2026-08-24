@@ -28,6 +28,7 @@ function toPlainEmployee(employee: any) {
     isWorking: employee.isWorking ?? false,
     email: employee.email ?? null,
     authUserId: employee.authUserId ?? null,
+    role: employee.role ?? "employee",
     createdAt: employee.createdAt,
     updatedAt: employee.updatedAt,
   };
@@ -62,6 +63,22 @@ export async function getEmployee(id: string) {
   try {
     await waitForDb();
     const employee = await employeeService.getById(id);
+    if (!employee) {
+      return { success: false, error: "Empleado no encontrado" };
+    }
+    return { success: true, data: toPlainEmployee(employee) };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+export async function getEmployeeByAuthUserId(authUserId: string) {
+  try {
+    await waitForDb();
+    const { AppDataSource } = await import("@/backend/datasource");
+    const { Employee } = await import("@/backend/models/Employee");
+    const repo = AppDataSource.getRepository(Employee);
+    const employee = await repo.findOne({ where: { authUserId } });
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
     }

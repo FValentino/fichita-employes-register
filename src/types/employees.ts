@@ -6,6 +6,7 @@ export interface Employee {
   weeklyHours: number;
   active: boolean;
   isWorking: boolean;
+  role: "admin" | "employee";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +16,7 @@ export interface CreateEmployeeDTO {
   lastName: string;
   hourlyRate?: number;
   weeklyHours?: number;
+  role?: "admin" | "employee";
 }
 
 export interface UpdateEmployeeDTO {
@@ -23,4 +25,5 @@ export interface UpdateEmployeeDTO {
   hourlyRate?: number;
   weeklyHours?: number;
   active?: boolean;
+  role?: "admin" | "employee";
 }

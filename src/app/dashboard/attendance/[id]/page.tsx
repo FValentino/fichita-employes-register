@@ -1,44 +1,72 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { theme } from "@/lib/theme";
-import { getEmployeeWeeklyTurns, Turno } from "@/actions";
+import { getEmployeeAttendances, getEmployee, updateAttendanceTimestamp } from "@/actions";
 import { PageTitle } from "@/components/PageTitle";
+import { HiArrowLeft, HiPencil } from "react-icons/hi2";
 
-interface TurnoData {
-  id: number;
-  entryTime: string | null;
-  exitTime: string | null;
-  isOpen: boolean;
-}
-
-interface WeeklyData {
-  turns: TurnoData[];
-  monday: string;
-  sunday: string;
+interface AttendanceRecord {
+  id: string;
+  employeeId: string;
+  type: "ENTRADA" | "SALIDA";
+  timestamp: Date;
+  createdAt: Date;
 }
 
 export default function AttendanceDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const employeeId = params.id as string;
-  const [weeklyData, setWeeklyData] = useState<WeeklyData | null>(null);
-  const [hourlyRate, setHourlyRate] = useState(100);
+  const [attendances, setAttendances] = useState<AttendanceRecord[]>([]);
+  const [employeeName, setEmployeeName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      const result = await getEmployeeWeeklyTurns(employeeId);
-      if (result.success && result.data) {
-        setWeeklyData(result.data as WeeklyData);
-      }
-      setLoading(false);
-    }
     fetchData();
   }, [employeeId]);
 
-  const formatDate = (dateStr: string) => {
+  const fetchData = async () => {
+    setLoading(true);
+    const [attResult, empResult] = await Promise.all([
+      getEmployeeAttendances(employeeId),
+      getEmployee(employeeId),
+    ]);
+
+    if (attResult.success && attResult.data) {
+      // Filter to current week
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+
+      const weekAttendances = attResult.data.filter((a) => {
+        const ts = new Date(a.timestamp);
+        return ts >= monday && ts <= sunday;
+      });
+
+      // Sort by timestamp descending
+      weekAttendances.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setAttendances(weekAttendances);
+    }
+
+    if (empResult.success && empResult.data) {
+      setEmployeeName(`${empResult.data.name} ${empResult.data.lastName}`);
+    }
+
+    setLoading(false);
+  };
+
+  const formatDate = (dateStr: string | Date) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("es-ES", {
       day: "2-digit",
@@ -47,140 +75,188 @@ export default function AttendanceDetailPage() {
     });
   };
 
-const formatDateTime = (dateStr: string | null) => {
-    if (!dateStr) return "Turno en proceso";
+  const formatTime = (dateStr: string | Date) => {
     const date = new Date(dateStr);
-    return `${formatDate(dateStr)} ${date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Argentina/Buenos_Aires" })}`;
+    return date.toLocaleTimeString("es-AR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Argentina/Buenos_Aires",
+    });
   };
 
-  const calculateSalary = () => {
-    if (!weeklyData) return "0.00";
-    let totalHours = 0;
-    weeklyData.turns.forEach((turno) => {
-      if (turno.entryTime && turno.exitTime) {
-        const entry = new Date(turno.entryTime);
-        const exit = new Date(turno.exitTime);
-        const hours = (exit.getTime() - entry.getTime()) / (1000 * 60 * 60);
-        totalHours += hours;
+  const formatDateTime = (dateStr: string | Date) => {
+    return `${formatDate(dateStr)} ${formatTime(dateStr)}`;
+  };
+
+  const toLocalDatetimeString = (dateStr: string | Date) => {
+    const d = new Date(dateStr);
+    // Convert to Argentina time for the input
+    const arTime = new Date(d.getTime() + (3 * 60 * 60 * 1000));
+    const yyyy = arTime.getUTCFullYear();
+    const mm = String(arTime.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(arTime.getUTCDate()).padStart(2, "0");
+    const hh = String(arTime.getUTCHours()).padStart(2, "0");
+    const mi = String(arTime.getUTCMinutes()).padStart(2, "0");
+    return { date: `${yyyy}-${mm}-${dd}`, time: `${hh}:${mi}` };
+  };
+
+  const handleEdit = (att: AttendanceRecord) => {
+    const { date, time } = toLocalDatetimeString(att.timestamp);
+    setEditingId(att.id);
+    setEditDate(date);
+    setEditTime(time);
+  };
+
+  const handleSave = async () => {
+    if (!editingId || !editDate || !editTime) return;
+
+    setSaving(true);
+    // Combine date and time in Argentina timezone, convert to UTC
+    const [year, month, day] = editDate.split("-").map(Number);
+    const [hours, minutes] = editTime.split(":").map(Number);
+    // Argentina is UTC-3
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hours + 3, minutes, 0, 0));
+
+    const result = await updateAttendanceTimestamp(editingId, utcDate);
+
+    if (result.success) {
+      setEditingId(null);
+      await fetchData();
+    } else {
+      alert(result.error || "Error al guardar");
+    }
+    setSaving(false);
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditDate("");
+    setEditTime("");
+  };
+
+  const calculateTotalHours = () => {
+    let totalMinutes = 0;
+    // Group by pairs (entry + exit)
+    const entries = attendances.filter((a) => a.type === "ENTRADA").reverse();
+    const exits = attendances.filter((a) => a.type === "SALIDA").reverse();
+
+    for (const entry of entries) {
+      const exit = exits.find((e) => new Date(e.timestamp) > new Date(entry.timestamp));
+      if (exit) {
+        totalMinutes += (new Date(exit.timestamp).getTime() - new Date(entry.timestamp).getTime()) / (1000 * 60);
       }
-    });
-    return (totalHours * hourlyRate).toFixed(2);
+    }
+    return (totalMinutes / 60).toFixed(1);
   };
 
   if (loading) {
     return (
-      <div style={{ padding: "48px", textAlign: "center" }}>
-        <p>Cargando...</p>
-      </div>
-    );
-  }
-
-  if (!weeklyData) {
-    return (
-      <div style={{ padding: "48px", textAlign: "center" }}>
-        <p>Error al cargar los datos</p>
+      <div className="p-4">
+        <p className="text-center text-gray-500">Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <PageTitle>Asistencia desde {formatDate(weeklyData.monday)} hasta {formatDate(weeklyData.sunday)}</PageTitle>
-
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          borderRadius: "12px",
-          padding: "24px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          marginBottom: "16px",
-        }}
-      >
-        <p style={{ color: theme.colors.gray[500], fontSize: "14px", marginBottom: "8px" }}>
-          <strong>Sueldo hasta hoy:</strong> ${calculateSalary()}
-        </p>
-
-        <div
-          style={{
-            backgroundColor: "#FEF3C7",
-            padding: "8px 12px",
-            borderRadius: "8px",
-          }}
+    <div className="p-4">
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => router.push("/dashboard/attendance")}
+          className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
         >
-          <p style={{ color: "#92400E", fontSize: "12px", margin: 0 }}>
-            Para el sueldo no se tiene en cuenta el turno en proceso
+          <HiArrowLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <div>
+          <PageTitle>Asistencia — {employeeName}</PageTitle>
+          <p className="text-sm text-gray-500 m-0 mt-1">
+            Semana actual • {calculateTotalHours()} horas totales
           </p>
         </div>
       </div>
 
-      <div
-        style={{
-          backgroundColor: theme.colors.white,
-          borderRadius: "12px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          overflow: "hidden",
-        }}
-      >
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        <table className="w-full border-collapse">
           <thead>
-            <tr style={{ backgroundColor: theme.colors.gray[100] }}>
-              <th
-                style={{
-                  padding: "16px",
-                  textAlign: "left",
-                  color: theme.colors.gray[500],
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Inicio del turno
-              </th>
-              <th
-                style={{
-                  padding: "16px",
-                  textAlign: "left",
-                  color: theme.colors.gray[500],
-                  fontSize: "14px",
-                  fontWeight: "500",
-                }}
-              >
-                Fin del turno
-              </th>
+            <tr className="bg-gray-50">
+              <th className="p-4 text-left text-sm font-medium text-gray-500">Fecha</th>
+              <th className="p-4 text-left text-sm font-medium text-gray-500">Tipo</th>
+              <th className="p-4 text-left text-sm font-medium text-gray-500">Hora</th>
+              <th className="p-4 text-center text-sm font-medium text-gray-500">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {weeklyData.turns.length === 0 ? (
+            {attendances.length === 0 ? (
               <tr>
-                <td
-                  colSpan={2}
-                  style={{
-                    padding: "48px",
-                    textAlign: "center",
-                    color: theme.colors.gray[500],
-                  }}
-                >
+                <td colSpan={4} className="p-12 text-center text-gray-500">
                   No hay registros esta semana
                 </td>
               </tr>
             ) : (
-              weeklyData.turns.map((turno, index) => (
+              attendances.map((att, index) => (
                 <tr
-                  key={turno.id}
-                  style={{
-                    borderTop: index > 0 ? `1px solid ${theme.colors.gray[200]}` : "none",
-                  }}
+                  key={att.id}
+                  className={index > 0 ? "border-t border-gray-100" : ""}
                 >
-                  <td style={{ padding: "16px", fontSize: "14px", color: theme.colors.neutral }}>
-                    {turno.entryTime ? formatDateTime(turno.entryTime) : "-"}
+                  <td className="p-4 text-sm text-gray-800">
+                    {formatDate(att.timestamp)}
                   </td>
-                  <td
-                    style={{
-                      padding: "16px",
-                      fontSize: "14px",
-                      color: turno.isOpen ? "#F59E0B" : theme.colors.neutral,
-                    }}
-                  >
-                    {formatDateTime(turno.exitTime)}
+                  <td className="p-4">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        att.type === "ENTRADA"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {att.type}
+                    </span>
+                  </td>
+                  <td className="p-4 text-sm text-gray-800">
+                    {editingId === att.id ? (
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={editDate}
+                          onChange={(e) => setEditDate(e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={editTime}
+                          onChange={(e) => setEditTime(e.target.value)}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      </div>
+                    ) : (
+                      formatTime(att.timestamp)
+                    )}
+                  </td>
+                  <td className="p-4 text-center">
+                    {editingId === att.id ? (
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={handleSave}
+                          disabled={saving}
+                          className="px-3 py-1.5 rounded-md bg-amber-500 text-neutral-900 text-xs font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+                        >
+                          {saving ? "Guardando..." : "Guardar"}
+                        </button>
+                        <button
+                          onClick={handleCancel}
+                          className="px-3 py-1.5 rounded-md border border-gray-300 bg-white text-gray-700 text-xs font-medium hover:bg-gray-50 transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleEdit(att)}
+                        className="p-1.5 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                        title="Editar hora"
+                      >
+                        <HiPencil className="w-4 h-4" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

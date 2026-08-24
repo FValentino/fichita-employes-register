@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { employeeService } from "@/backend/services/EmployeeService";
+import { auditLogService } from "@/backend/services/AuditLogService";
 import { waitForDb } from "@/backend/datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
 
@@ -96,11 +97,39 @@ export async function createEmployee(data: CreateEmployeeDTO) {
 export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
   try {
     await waitForDb();
+
+    // Get current employee data for audit log
+    const currentEmployee = await employeeService.getById(id);
+    if (!currentEmployee) {
+      return { success: false, error: "Empleado no encontrado" };
+    }
+
     const formattedData = formatEmployeeData(data) as UpdateEmployeeDTO;
     const employee = await employeeService.update(id, formattedData);
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
     }
+
+    // Log changes
+    const changes: Record<string, { old: any; new: any }> = {};
+    for (const [key, newValue] of Object.entries(formattedData)) {
+      if (newValue !== undefined) {
+        const oldValue = (currentEmployee as any)[key];
+        if (String(oldValue) !== String(newValue)) {
+          changes[key] = { old: oldValue, new: newValue };
+        }
+      }
+    }
+
+    if (Object.keys(changes).length > 0) {
+      await auditLogService.log({
+        entity: "employee",
+        entityId: id,
+        action: "update",
+        changes,
+      });
+    }
+
     revalidatePath("/dashboard/employees");
     return { success: true, data: toPlainEmployee(employee) };
   } catch (error) {

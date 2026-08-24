@@ -3,6 +3,7 @@ import { DataSource } from "typeorm";
 import { Employee } from "./models/Employee";
 import { Attendance } from "./models/Attendance";
 import { Location } from "./models/Location";
+import { EmployeeTurn } from "./models/EmployeeTurn";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -21,7 +22,7 @@ class Database {
       },
       synchronize: true,
       logging: false,
-      entities: [Employee, Attendance, Location],
+      entities: [Employee, Attendance, Location, EmployeeTurn],
       migrations: [],
       subscribers: [],
       extra: {

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { attendanceService } from "@/backend/services/AttendanceService";
 import { employeeService } from "@/backend/services/EmployeeService";
+import { employeeTurnService } from "@/backend/services/EmployeeTurnService";
 import { waitForDb } from "@/backend/datasource";
 import { AttendanceType } from "@/backend/models/Attendance";
 import type { Attendance, AttendanceWithEmployee, EmployeeBasic, AttendanceStatus, DashboardStats, Turn } from "@/types/attendance";
@@ -191,6 +192,67 @@ export async function getDashboardStats(): Promise<{ success: boolean; data?: Da
     const entriesToday = plainAttendances.filter((a) => a.type === AttendanceType.ENTRADA).length;
     const exitsToday = plainAttendances.filter((a) => a.type === AttendanceType.SALIDA).length;
 
+    // Calculate weekly tardanzas
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const TOLERANCE_MINUTES = 5;
+    let tardanzasSemanales = 0;
+
+    for (const emp of employees) {
+      // Only count tardanzas for employees with assigned turns
+      const turns = await employeeTurnService.getByEmployee(emp.id);
+      if (turns.length === 0) continue;
+
+      // Get this week's attendances for this employee
+      const empAttendances = plainAttendances.filter(
+        (a) => a.employeeId === emp.id && a.type === AttendanceType.ENTRADA
+      );
+
+      // Group entries by day
+      const entriesByDay = new Map<number, Date[]>();
+      for (const att of empAttendances) {
+        const attDate = new Date(att.timestamp);
+        if (attDate >= monday && attDate <= sunday) {
+          // Get day of week (0=Monday)
+          const dow = attDate.getDay();
+          const adjustedDow = dow === 0 ? 6 : dow - 1;
+          if (!entriesByDay.has(adjustedDow)) {
+            entriesByDay.set(adjustedDow, []);
+          }
+          entriesByDay.get(adjustedDow)!.push(attDate);
+        }
+      }
+
+      // For each day with turns, check if first entry is late
+      for (const turn of turns) {
+        if (!turn.entryTime) continue;
+        const dayEntries = entriesByDay.get(turn.dayOfWeek);
+        if (!dayEntries || dayEntries.length === 0) continue;
+
+        // Get first entry of the day
+        const firstEntry = dayEntries.sort((a, b) => a.getTime() - b.getTime())[0];
+
+        // Parse turn entry time (HH:MM format)
+        const [turnHours, turnMinutes] = turn.entryTime.split(":").map(Number);
+        const turnDate = new Date(firstEntry);
+        turnDate.setHours(turnHours, turnMinutes, 0, 0);
+
+        // Calculate difference in minutes
+        const diffMinutes = (firstEntry.getTime() - turnDate.getTime()) / (1000 * 60);
+
+        if (diffMinutes > TOLERANCE_MINUTES) {
+          tardanzasSemanales++;
+        }
+      }
+    }
+
     return {
       success: true,
       data: {
@@ -198,7 +260,7 @@ export async function getDashboardStats(): Promise<{ success: boolean; data?: Da
         workingEmployees,
         entriesToday,
         exitsToday,
-        tardanzasSemanales: 0,
+        tardanzasSemanales,
       },
     };
   } catch (error) {

@@ -5,6 +5,7 @@ import { Attendance } from "./models/Attendance";
 import { Location } from "./models/Location";
 import { EmployeeTurn } from "./models/EmployeeTurn";
 import { Setting } from "./models/Setting";
+import { AuditLog } from "./models/AuditLog";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -23,7 +24,7 @@ class Database {
       },
       synchronize: true,
       logging: false,
-      entities: [Employee, Attendance, Location, EmployeeTurn, Setting],
+      entities: [Employee, Attendance, Location, EmployeeTurn, Setting, AuditLog],
       migrations: [],
       subscribers: [],
       extra: {

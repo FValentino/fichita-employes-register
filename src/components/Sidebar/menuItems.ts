@@ -10,4 +10,5 @@ export const menuItems: MenuItem[] = [
   { label: "Empleados", href: "/dashboard/employees", icon: "👥" },
   { label: "Reportes", href: "/dashboard/reports", icon: "📋" },
   { label: "Ubicaciones", href: "/dashboard/locations", icon: "📍" },
+  { label: "Configuración", href: "/dashboard/settings", icon: "⚙️" },
 ];

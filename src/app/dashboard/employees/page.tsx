@@ -78,7 +78,9 @@ export default async function EmployeesPage() {
                       {employee.authUserId ? "Vinculado" : "Sin cuenta"}
                     </span>
                   </div>
-                  <EmployeeActions employee={employee} />
+                  <div className="mt-3">
+                    <EmployeeActions employee={employee} />
+                  </div>
                 </div>
               ))}
             </div>

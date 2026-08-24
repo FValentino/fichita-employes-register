@@ -37,46 +37,36 @@ export function EmployeeActions({ employee }: EmployeeActionsProps) {
     router.push(`/dashboard/attendance/${employee.id}`);
   };
 
+  const actionButtons = (
+    <>
+      <EditEmployeeButton employee={employee} />
+      <AssignTurnsButton employee={employee} />
+      <InviteEmployeeButton employee={employee} />
+      <button
+        onClick={handleDelete}
+        className="px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
+      >
+        Eliminar
+      </button>
+      <button
+        onClick={handleViewAttendance}
+        className="px-3 py-1.5 rounded-md border border-amber-500 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-amber-50 transition-colors"
+      >
+        Ver asistencia
+      </button>
+    </>
+  );
+
   return (
     <>
       {/* Mobile */}
-      <td className="p-4 md:hidden">
-        <div className="flex gap-2 justify-end">
-          <EditEmployeeButton employee={employee} />
-          <AssignTurnsButton employee={employee} />
-          <InviteEmployeeButton employee={employee} />
-          <button
-            onClick={handleDelete}
-            className="px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
-          >
-            Eliminar
-          </button>
-          <button
-            onClick={handleViewAttendance}
-            className="px-3 py-1.5 rounded-md border border-amber-500 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-amber-50 transition-colors"
-          >
-            Ver
-          </button>
-        </div>
-      </td>
+      <div className="flex gap-2 justify-end md:hidden">
+        {actionButtons}
+      </div>
 
       {/* Desktop */}
       <td className="hidden md:table-cell p-4 text-center">
-        <EditEmployeeButton employee={employee} />
-        <AssignTurnsButton employee={employee} />
-        <InviteEmployeeButton employee={employee} />
-        <button
-          onClick={handleDelete}
-          className="mx-1 px-3 py-1.5 rounded-md border border-red-500 bg-white text-red-500 text-xs font-medium cursor-pointer hover:bg-red-50 transition-colors"
-        >
-          Eliminar
-        </button>
-        <button
-          onClick={handleViewAttendance}
-          className="mx-1 px-3 py-1.5 rounded-md border border-amber-500 bg-white text-gray-700 text-xs font-medium cursor-pointer hover:bg-amber-50 transition-colors"
-        >
-          Ver asistencia
-        </button>
+        {actionButtons}
       </td>
     </>
   );

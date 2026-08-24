@@ -72,6 +72,8 @@ export const RATE_LIMITS = {
   attendance: { windowMs: 60 * 1000, maxRequests: 30 },
   // QR verify: 20 requests per minute
   qr: { windowMs: 60 * 1000, maxRequests: 20 },
+  // WebAuthn ceremonies (options/verify): 10 requests per minute
+  webauthn: { windowMs: 60 * 1000, maxRequests: 10 },
   // General API: 60 requests per minute
   general: { windowMs: 60 * 1000, maxRequests: 60 },
 } as const;

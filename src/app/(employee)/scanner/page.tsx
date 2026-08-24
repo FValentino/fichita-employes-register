@@ -3,29 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
-import { recordEntry, recordExit, getEmployeeTodayAttendances } from "@/actions";
+import { recordEntry, recordExit, getEmployeeTodayAttendances, getEmployeeByAuthUserId } from "@/actions";
+import { BiometricGate } from "@/features/biometric-verification";
 import { HiCamera, HiCheckCircle, HiArrowLeft } from "react-icons/hi2";
 
 export default function ScannerPage() {
   const [employeeId, setEmployeeId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "processing" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
   const [lastType, setLastType] = useState<"ENTRADA" | "SALIDA" | null>(null);
   const router = useRouter();
-
-  useEffect(() => {
-    const supabase = createSupabaseClient();
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        // For now, use the user ID as employee ID
-        // In a real app, you'd look up the employee by authUserId
-        setEmployeeId(data.user.id);
-        checkStatus(data.user.id);
-      } else {
-        router.push("/login");
-      }
-    });
-  }, [router]);
 
   const checkStatus = async (id: string) => {
     const result = await getEmployeeTodayAttendances(id);
@@ -40,13 +28,36 @@ export default function ScannerPage() {
     setStatus("ready");
   };
 
-  const handleScan = async (type: "ENTRADA" | "SALIDA") => {
+  useEffect(() => {
+    const supabase = createSupabaseClient();
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (data.user) {
+        // Look up employee by authUserId to get the correct employee ID
+        const result = await getEmployeeByAuthUserId(data.user.id);
+        if (result.success && result.data) {
+          setEmployeeId(result.data.id);
+          // Admins bypass the biometric gate (REQ-ADM-3); the server
+          // re-resolves the role on every mutation regardless.
+          setIsAdmin(result.data.role === "admin");
+          checkStatus(result.data.id);
+        } else {
+          router.push("/login");
+        }
+      } else {
+        router.push("/login");
+      }
+    });
+  }, [router]);
+
+  const handleScan = async (type: "ENTRADA" | "SALIDA", stepUpToken?: string) => {
     if (!employeeId) return;
     setStatus("processing");
     setMessage("");
 
     const action = type === "ENTRADA" ? recordEntry : recordExit;
-    const result = await action(employeeId);
+    // Non-admins must present a fresh single-use step-up token; the server
+    // consumes it atomically before inserting the record.
+    const result = await action(employeeId, stepUpToken);
 
     if (result.success) {
       setStatus("success");
@@ -79,23 +90,55 @@ export default function ScannerPage() {
 
         {status === "ready" && (
           <div className="flex flex-col gap-4">
-            <button
-              onClick={() => handleScan("ENTRADA")}
-              disabled={lastType === "ENTRADA"}
-              className="w-full py-4 rounded-xl bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <HiCheckCircle className="w-6 h-6" />
-              Registrar Entrada
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => handleScan("ENTRADA")}
+                disabled={lastType === "ENTRADA"}
+                className="w-full py-4 rounded-xl bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <HiCheckCircle className="w-6 h-6" />
+                Registrar Entrada
+              </button>
+            ) : (
+              <BiometricGate
+                intent="entry"
+                onVerified={(token) => handleScan("ENTRADA", token)}
+              >
+                <button
+                  onClick={() => handleScan("ENTRADA")}
+                  disabled={lastType === "ENTRADA"}
+                  className="w-full py-4 rounded-xl bg-green-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-green-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  <HiCheckCircle className="w-6 h-6" />
+                  Registrar Entrada
+                </button>
+              </BiometricGate>
+            )}
 
-            <button
-              onClick={() => handleScan("SALIDA")}
-              disabled={lastType === "SALIDA"}
-              className="w-full py-4 rounded-xl bg-red-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              <HiCamera className="w-6 h-6" />
-              Registrar Salida
-            </button>
+            {isAdmin ? (
+              <button
+                onClick={() => handleScan("SALIDA")}
+                disabled={lastType === "SALIDA"}
+                className="w-full py-4 rounded-xl bg-red-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                <HiCamera className="w-6 h-6" />
+                Registrar Salida
+              </button>
+            ) : (
+              <BiometricGate
+                intent="exit"
+                onVerified={(token) => handleScan("SALIDA", token)}
+              >
+                <button
+                  onClick={() => handleScan("SALIDA")}
+                  disabled={lastType === "SALIDA"}
+                  className="w-full py-4 rounded-xl bg-red-500 text-white font-bold text-lg flex items-center justify-center gap-3 hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  <HiCamera className="w-6 h-6" />
+                  Registrar Salida
+                </button>
+              </BiometricGate>
+            )}
           </div>
         )}
 

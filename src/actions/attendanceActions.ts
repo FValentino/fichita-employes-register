@@ -6,6 +6,10 @@ import { employeeService } from "@/backend/services/EmployeeService";
 import { employeeTurnService } from "@/backend/services/EmployeeTurnService";
 import { waitForDb } from "@/backend/datasource";
 import { AttendanceType } from "@/backend/models/Attendance";
+import { UserRole } from "@/backend/models/Employee";
+import type { StepUpIntent } from "@/backend/models/WebAuthnStepUpToken";
+import { webAuthnStepUpTokenRepository } from "@/backend/repositories/WebAuthnStepUpTokenRepository";
+import { getSessionEmployee } from "@/lib/auth/session";
 import type { Attendance, AttendanceWithEmployee, EmployeeBasic, AttendanceStatus, DashboardStats, Turn } from "@/types/attendance";
 
 export type Turno = {
@@ -16,11 +20,90 @@ export type Turno = {
 };
 import type { Employee } from "@/types/employees";
 
-interface RecordAttendanceParams {
+/**
+ * Input accepted from the CLIENT. Identity fields are deliberately absent:
+ * `employeeId` is validated against the session, `recordedById` and
+ * `timestamp` are derived server-side — a client-supplied value would let
+ * anyone forge records for coworkers (identity-binding vulnerability).
+ */
+interface RecordAttendanceInput {
   employeeId: string;
-  recordedById?: string | null;
   type: AttendanceType;
-  timestamp?: Date;
+  /** Single-use step-up token; required for non-admin self-service. */
+  stepUpToken?: string;
+}
+
+export interface ActionResult {
+  success: boolean;
+  error?: string;
+  /** Machine-readable failure reason for the client to branch on. */
+  code?: string;
+}
+
+type AttendanceAuthorization =
+  | { authorized: true; employeeId: string }
+  | {
+      authorized: false;
+      code: "unauthenticated" | "forbidden" | "step_up_required" | "step_up_invalid";
+    };
+
+const AUTHORIZATION_ERRORS: Record<
+  Exclude<Extract<AttendanceAuthorization, { authorized: false }>["code"], undefined>,
+  string
+> = {
+  unauthenticated: "Debes iniciar sesión para registrar asistencia",
+  forbidden: "No puedes registrar la asistencia de otro empleado",
+  step_up_required: "Se requiere verificación biométrica",
+  step_up_invalid: "Verificación biométrica inválida o expirada",
+};
+
+function intentForType(type: AttendanceType): StepUpIntent {
+  return type === AttendanceType.ENTRADA ? "entry" : "exit";
+}
+
+/**
+ * Identity-binding gate for attendance recording.
+ *
+ * - Admin: may record for ANY employee (current behavior).
+ * - Employee: may only record for THEMSELVES and must present a valid,
+ *   unconsumed step-up token bound to their own id and the exact intent.
+ *
+ * NOTE: the Attendance entity has no "recordedBy" column today — who
+ * performed an admin recording is not persisted anywhere yet.
+ */
+async function authorizeAttendance(
+  input: RecordAttendanceInput
+): Promise<AttendanceAuthorization> {
+  const employee = await getSessionEmployee();
+  if (!employee) {
+    return { authorized: false, code: "unauthenticated" };
+  }
+
+  if (employee.role === UserRole.ADMIN) {
+    return { authorized: true, employeeId: input.employeeId };
+  }
+
+  if (input.employeeId !== employee.id) {
+    return { authorized: false, code: "forbidden" };
+  }
+
+  const intent = intentForType(input.type);
+  if (!input.stepUpToken) {
+    return { authorized: false, code: "step_up_required" };
+  }
+
+  // Atomic single-use consumption: expired/spent/wrong-id/wrong-intent
+  // tokens all resolve to null (indistinguishable by design).
+  const consumed = await webAuthnStepUpTokenRepository.consume(
+    input.stepUpToken,
+    employee.id,
+    intent
+  );
+  if (!consumed) {
+    return { authorized: false, code: "step_up_invalid" };
+  }
+
+  return { authorized: true, employeeId: employee.id };
 }
 
 function toPlainEmployee(employee: any): EmployeeBasic {
@@ -112,9 +195,23 @@ export async function getEmployeeTodayAttendances(employeeId: string): Promise<{
   }
 }
 
-export async function recordAttendance(data: RecordAttendanceParams) {
+export async function recordAttendance(
+  data: RecordAttendanceInput
+): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
   try {
-    const attendance = await attendanceService.record(data);
+    const authorization = await authorizeAttendance(data);
+    if (!authorization.authorized) {
+      return {
+        success: false,
+        error: AUTHORIZATION_ERRORS[authorization.code],
+        code: authorization.code,
+      };
+    }
+
+    const attendance = await attendanceService.record({
+      employeeId: authorization.employeeId,
+      type: data.type,
+    });
     revalidatePath("/dashboard/attendance");
     revalidatePath("/dashboard");
     return { success: true, data: toPlainAttendanceWithEmployee(attendance) };
@@ -123,20 +220,61 @@ export async function recordAttendance(data: RecordAttendanceParams) {
   }
 }
 
-export async function recordEntry(employeeId: string, recordedBy?: string | null) {
-  return recordAttendance({
-    employeeId,
-    recordedById: recordedBy ?? null,
-    type: AttendanceType.ENTRADA,
-  });
+/**
+ * Records a clock-in. `employeeId` must match the session's own employee
+ * unless the session is an admin; non-admins additionally need a fresh
+ * step-up token from /api/webauthn/assert/*.
+ */
+export async function recordEntry(
+  employeeId: string,
+  stepUpToken?: string
+): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
+  return recordAttendance({ employeeId, type: AttendanceType.ENTRADA, stepUpToken });
 }
 
-export async function recordExit(employeeId: string, recordedBy?: string | null) {
-  return recordAttendance({
-    employeeId,
-    recordedById: recordedBy ?? null,
-    type: AttendanceType.SALIDA,
-  });
+/**
+ * Records a clock-out. Same identity-binding rules as recordEntry.
+ */
+export async function recordExit(
+  employeeId: string,
+  stepUpToken?: string
+): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
+  return recordAttendance({ employeeId, type: AttendanceType.SALIDA, stepUpToken });
+}
+
+/**
+ * Admin-only timestamp correction. Rewriting a recorded timestamp directly
+ * affects payroll, so this action must never be callable by regular
+ * employees: identity comes from the verified session, not client input.
+ */
+export async function updateAttendanceTimestamp(
+  attendanceId: string,
+  newTimestamp: Date
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const session = await getSessionEmployee();
+    if (!session || session.role !== UserRole.ADMIN) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    await waitForDb();
+    const { AppDataSource } = await import("@/backend/datasource");
+    const { Attendance } = await import("@/backend/models/Attendance");
+    const repo = AppDataSource.getRepository(Attendance);
+
+    const attendance = await repo.findOne({ where: { id: attendanceId } });
+    if (!attendance) {
+      return { success: false, error: "Asistencia no encontrada" };
+    }
+
+    attendance.timestamp = newTimestamp;
+    await repo.save(attendance);
+
+    revalidatePath("/dashboard/attendance");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
 }
 
 export async function getAttendanceStatus(): Promise<{ success: boolean; data?: AttendanceStatus[]; error?: string }> {

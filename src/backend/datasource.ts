@@ -6,6 +6,8 @@ import { Location } from "./models/Location";
 import { EmployeeTurn } from "./models/EmployeeTurn";
 import { Setting } from "./models/Setting";
 import { AuditLog } from "./models/AuditLog";
+import { WebAuthnCredential } from "./models/WebAuthnCredential";
+import { WebAuthnStepUpToken } from "./models/WebAuthnStepUpToken";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -24,7 +26,16 @@ class Database {
       },
       synchronize: true,
       logging: false,
-      entities: [Employee, Attendance, Location, EmployeeTurn, Setting, AuditLog],
+      entities: [
+        Employee,
+        Attendance,
+        Location,
+        EmployeeTurn,
+        Setting,
+        AuditLog,
+        WebAuthnCredential,
+        WebAuthnStepUpToken,
+      ],
       migrations: [],
       subscribers: [],
       extra: {

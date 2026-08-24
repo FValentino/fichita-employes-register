@@ -22,8 +22,12 @@ class EmployeeRepository {
     return this.repository.find();
   }
 
-public async findById(id: string): Promise<Employee | null> {
+  public async findById(id: string): Promise<Employee | null> {
     return this.repository.findOne({ where: { id } });
+  }
+
+  public async findByAuthUserId(authUserId: string): Promise<Employee | null> {
+    return this.repository.findOne({ where: { authUserId } });
   }
 
   public async findActive(): Promise<Employee[]> {

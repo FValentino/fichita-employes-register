@@ -2,6 +2,7 @@ import "reflect-metadata";
 import { DataSource } from "typeorm";
 import { Employee } from "./models/Employee";
 import { Attendance } from "./models/Attendance";
+import { Location } from "./models/Location";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -20,7 +21,7 @@ class Database {
       },
       synchronize: true,
       logging: false,
-      entities: [Employee, Attendance],
+      entities: [Employee, Attendance, Location],
       migrations: [],
       subscribers: [],
       extra: {

@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { theme } from "@/lib/theme";
 import { createSupabaseClient } from "@/lib/supabase";
+import { HiEye, HiEyeSlash } from "react-icons/hi2";
 
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createSupabaseClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -162,27 +164,54 @@ export default function LoginPage() {
             >
               Contraseña
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: `1px solid ${theme.colors.gray[300]}`,
-                fontSize: "14px",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = theme.colors.primary;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = theme.colors.gray[300];
-              }}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "12px 40px 12px 16px",
+                  borderRadius: "8px",
+                  border: `1px solid ${theme.colors.gray[300]}`,
+                  fontSize: "14px",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = theme.colors.primary;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = theme.colors.gray[300];
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: theme.colors.gray[500],
+                }}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <HiEyeSlash className="w-5 h-5" />
+                ) : (
+                  <HiEye className="w-5 h-5" />
+                )}
+              </button>
+            </div>
           </div>
 
           {error && (

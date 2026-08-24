@@ -5,6 +5,8 @@ export interface Employee {
   hourlyRate: number;
   weeklyHours: number;
   active: boolean;
+  email: string | null;
+  authUserId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,6 +16,7 @@ export interface CreateEmployeeDTO {
   lastName: string;
   hourlyRate?: number;
   weeklyHours?: number;
+  email?: string;
 }
 
 export interface UpdateEmployeeDTO {
@@ -22,4 +25,6 @@ export interface UpdateEmployeeDTO {
   hourlyRate?: number;
   weeklyHours?: number;
   active?: boolean;
+  email?: string;
+  authUserId?: string;
 }

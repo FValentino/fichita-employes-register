@@ -29,6 +29,12 @@ export class Employee {
   @Column({ default: false })
   isWorking!: boolean;
 
+  @Column({ nullable: true })
+  email!: string | null;
+
+  @Column({ nullable: true })
+  authUserId!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

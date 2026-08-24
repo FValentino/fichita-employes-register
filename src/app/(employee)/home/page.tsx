@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseClient } from "@/lib/supabase";
 import { getEmployeeByAuthUserId } from "@/actions";
+import { PasskeyEnrollment } from "@/features/biometric-verification/components/PasskeyEnrollment";
 import {
   HiClock,
   HiDocumentText,
@@ -22,6 +23,8 @@ interface EmployeeData {
 export default function HomePage() {
   const [employee, setEmployee] = useState<EmployeeData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [passkeyEnrolled, setPasskeyEnrolled] = useState<boolean | null>(null);
+  const [showEnrollment, setShowEnrollment] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -43,6 +46,21 @@ export default function HomePage() {
             email: data.user.email ?? "",
             isWorking: false,
           });
+        }
+
+        // Check if passkey is enrolled
+        try {
+          const statusRes = await fetch("/api/webauthn/status");
+          if (statusRes.ok) {
+            const { enrolled } = await statusRes.json();
+            setPasskeyEnrolled(enrolled);
+            if (!enrolled) {
+              setShowEnrollment(true);
+            }
+          }
+        } catch {
+          // If check fails, don't block the user
+          setPasskeyEnrolled(true);
         }
       } else {
         router.push("/login");
@@ -76,6 +94,19 @@ export default function HomePage() {
           </h1>
           <p className="text-gray-500 mt-1 m-0">{employee?.email}</p>
         </div>
+
+        {/* Passkey enrollment prompt */}
+        {showEnrollment && (
+          <div className="mb-6">
+            <PasskeyEnrollment
+              onEnrolled={() => {
+                setPasskeyEnrolled(true);
+                setShowEnrollment(false);
+              }}
+              onSkip={() => setShowEnrollment(false)}
+            />
+          </div>
+        )}
 
         {/* Status card */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-6">

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getEmployeesWithMonthlyTurns } from "@/actions/employeeActions";
 import { waitForDb } from "@/backend/datasource";
+import { withRateLimit, RATE_LIMITS } from "@/lib/api-middleware";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,12 @@ function formatFullDate(date: Date | string): string {
   return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const rateLimit = withRateLimit(request, RATE_LIMITS.general, "reports:mensual");
+  if (!rateLimit.allowed) {
+    return rateLimit.response;
+  }
+
   try {
     await waitForDb();
     

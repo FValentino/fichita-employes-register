@@ -87,7 +87,7 @@ export function PasskeyEnrollment({
       const verifyRes = await fetch("/api/webauthn/register/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response: registration }),
+        body: JSON.stringify(registration),
       });
 
       if (!verifyRes.ok) {

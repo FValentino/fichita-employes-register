@@ -119,6 +119,13 @@ export class AttendanceService {
   public async getByEmployeeAndDateRange(employeeId: string, startDate: Date, endDate: Date): Promise<Attendance[]> {
     return attendanceRepository.findByEmployeeAndDateRange(employeeId, startDate, endDate);
   }
+
+  /**
+   * Batch query: all attendances in a date range (single DB hit).
+   */
+  public async getByDateRange(startDate: Date, endDate: Date): Promise<Attendance[]> {
+    return attendanceRepository.findByDateRange(startDate, endDate);
+  }
 }
 
 export const attendanceService = AttendanceService.getInstance();

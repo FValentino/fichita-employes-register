@@ -5,6 +5,7 @@ import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
 import { createClient } from "@supabase/supabase-js";
 import { requireAdmin } from "@/lib/auth/guard";
+import { inviteEmployeeSchema } from "@/lib/validations";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,6 +25,11 @@ export async function inviteEmployee(
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
+
+    const parsed = inviteEmployeeSchema.safeParse({ employeeId, email, password });
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
 
     // Check employee exists
     const employee = await employeeService.getById(employeeId);

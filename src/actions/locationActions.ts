@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { locationService } from "@/backend/services/LocationService";
 import { waitForDb } from "@/backend/datasource";
-import { CreateLocationDTO, UpdateLocationDTO } from "@/backend/types/locations";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
+import { createLocationSchema, updateLocationSchema } from "@/lib/validations";
 
 function toPlainLocation(location: any) {
   return {
@@ -44,12 +44,18 @@ export async function getActiveLocations() {
   }
 }
 
-export async function createLocation(data: CreateLocationDTO) {
+export async function createLocation(data: unknown) {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const location = await locationService.create(data);
+
+    const parsed = createLocationSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    const location = await locationService.create(parsed.data as any);
     revalidatePath("/dashboard/locations");
     return { success: true, data: toPlainLocation(location) };
   } catch (error) {
@@ -57,12 +63,18 @@ export async function createLocation(data: CreateLocationDTO) {
   }
 }
 
-export async function updateLocation(id: string, data: UpdateLocationDTO) {
+export async function updateLocation(id: string, data: unknown) {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const location = await locationService.update(id, data);
+
+    const parsed = updateLocationSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    const location = await locationService.update(id, parsed.data as any);
     if (!location) {
       return { success: false, error: "Ubicación no encontrada" };
     }

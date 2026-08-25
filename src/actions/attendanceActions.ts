@@ -5,7 +5,8 @@ import { attendanceService } from "@/backend/services/AttendanceService";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { employeeTurnService } from "@/backend/services/EmployeeTurnService";
 import { waitForDb } from "@/backend/datasource";
-import { AttendanceType } from "@/backend/models/Attendance";
+import { Attendance as AttendanceModel, AttendanceType } from "@/backend/models/Attendance";
+import { Employee as EmployeeModel } from "@/backend/models/Employee";
 import { UserRole } from "@/backend/models/Employee";
 import type { StepUpIntent } from "@/backend/models/WebAuthnStepUpToken";
 import { webAuthnStepUpTokenRepository } from "@/backend/repositories/WebAuthnStepUpTokenRepository";
@@ -48,7 +49,7 @@ export interface ActionResult {
 }
 
 type AttendanceAuthorization =
-  | { authorized: true; employeeId: string }
+  | { authorized: true; employeeId: string; recordedBy?: string }
   | {
       authorized: false;
       code: "unauthenticated" | "forbidden" | "step_up_required" | "step_up_invalid";
@@ -87,7 +88,7 @@ async function authorizeAttendance(
   }
 
   if (employee.role === UserRole.ADMIN) {
-    return { authorized: true, employeeId: input.employeeId };
+    return { authorized: true, employeeId: input.employeeId, recordedBy: employee.id };
   }
 
   if (input.employeeId !== employee.id) {
@@ -113,7 +114,7 @@ async function authorizeAttendance(
   return { authorized: true, employeeId: employee.id };
 }
 
-function toPlainEmployee(employee: any): EmployeeBasic {
+function toPlainEmployee(employee: EmployeeModel): EmployeeBasic {
   return {
     id: employee.id,
     name: employee.name,
@@ -123,10 +124,10 @@ function toPlainEmployee(employee: any): EmployeeBasic {
   };
 }
 
-function toPlainAttendance(attendance: any): Attendance {
+function toPlainAttendance(attendance: AttendanceModel): Attendance {
   return {
     id: attendance.id,
-    employeeId: attendance.employee_id,
+    employeeId: attendance.employeeId,
     type: attendance.type,
     timestamp: attendance.timestamp,
     createdAt: attendance.created_at,
@@ -134,18 +135,18 @@ function toPlainAttendance(attendance: any): Attendance {
   };
 }
 
-function toPlainAttendanceWithEmployee(attendance: any): AttendanceWithEmployee {
+function toPlainAttendanceWithEmployee(attendance: AttendanceModel & { employee?: EmployeeModel }): AttendanceWithEmployee {
   return {
     id: attendance.id,
-    employeeId: attendance.employee_id,
+    employeeId: attendance.employeeId,
     type: attendance.type,
     timestamp: attendance.timestamp,
     createdAt: attendance.created_at,
     employee: {
-      id: attendance.employee?.id,
-      name: attendance.employee?.name,
-      lastName: attendance.employee?.lastName,
-      hourlyRate: Number(attendance.employee?.hourlyRate),
+      id: attendance.employee?.id ?? "",
+      name: attendance.employee?.name ?? "",
+      lastName: attendance.employee?.lastName ?? "",
+      hourlyRate: Number(attendance.employee?.hourlyRate ?? 0),
     },
   };
 }
@@ -230,6 +231,7 @@ export async function recordAttendance(
       employeeId: authorization.employeeId,
       type: data.type,
       deviceInfo: data.deviceInfo,
+      recordedBy: authorization.recordedBy ?? null,
     });
     revalidatePath("/dashboard/attendance");
     revalidatePath("/dashboard");

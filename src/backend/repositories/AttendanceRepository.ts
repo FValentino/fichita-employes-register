@@ -11,6 +11,7 @@ export interface CreateAttendanceDTO {
     userAgent?: string;
     verificationMethod?: "biometric" | "password";
   } | null;
+  recordedBy?: string | null;
 }
 
 export interface AttendanceFilters {

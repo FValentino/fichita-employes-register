@@ -6,8 +6,9 @@ import { auditLogService } from "@/backend/services/AuditLogService";
 import { waitForDb } from "@/backend/datasource";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 import { createEmployeeSchema, updateEmployeeSchema } from "@/lib/validations";
+import { Employee } from "@/backend/models/Employee";
 
-function toPlainEmployee(employee: any) {
+function toPlainEmployee(employee: Employee) {
   return {
     id: employee.id,
     name: employee.name,
@@ -141,7 +142,7 @@ export async function updateEmployee(id: string, data: unknown) {
     }
 
     // Log changes
-    const changes: Record<string, { old: any; new: any }> = {};
+    const changes: Record<string, { old: unknown; new: unknown }> = {};
     for (const [key, newValue] of Object.entries(formattedData)) {
       if (newValue !== undefined) {
         const oldValue = (currentEmployee as any)[key];

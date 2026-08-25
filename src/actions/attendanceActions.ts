@@ -10,6 +10,7 @@ import { UserRole } from "@/backend/models/Employee";
 import type { StepUpIntent } from "@/backend/models/WebAuthnStepUpToken";
 import { webAuthnStepUpTokenRepository } from "@/backend/repositories/WebAuthnStepUpTokenRepository";
 import { getSessionEmployee } from "@/lib/auth/session";
+import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 import type { Attendance, AttendanceWithEmployee, EmployeeBasic, AttendanceStatus, DashboardStats, Turn } from "@/types/attendance";
 
 export type Turno = {
@@ -151,6 +152,8 @@ function toPlainAttendanceWithEmployee(attendance: any): AttendanceWithEmployee 
 
 export async function getAttendances(): Promise<{ success: boolean; data?: AttendanceWithEmployee[]; error?: string }> {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const attendances = await attendanceService.getAll();
     return { success: true, data: attendances.map(toPlainAttendanceWithEmployee) };
@@ -161,6 +164,8 @@ export async function getAttendances(): Promise<{ success: boolean; data?: Atten
 
 export async function getAttendance(id: string): Promise<{ success: boolean; data?: AttendanceWithEmployee; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const attendance = await attendanceService.getById(id);
     if (!attendance) {
@@ -174,6 +179,8 @@ export async function getAttendance(id: string): Promise<{ success: boolean; dat
 
 export async function getEmployeeAttendances(employeeId: string): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const attendances = await attendanceService.getByEmployee(employeeId);
     return { success: true, data: attendances.map(toPlainAttendance) };
@@ -184,6 +191,8 @@ export async function getEmployeeAttendances(employeeId: string): Promise<{ succ
 
 export async function getTodayAttendances(): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const attendances = await attendanceService.getTodayAttendances();
     return { success: true, data: attendances.map(toPlainAttendance) };
@@ -194,6 +203,8 @@ export async function getTodayAttendances(): Promise<{ success: boolean; data?: 
 
 export async function getEmployeeTodayAttendances(employeeId: string): Promise<{ success: boolean; data?: Attendance[]; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const attendances = await attendanceService.getEmployeeTodayAttendances(employeeId);
     return { success: true, data: attendances.map(toPlainAttendance) };
@@ -297,15 +308,14 @@ export async function updateAttendanceTimestamp(
 
 export async function getAttendanceStatus(): Promise<{ success: boolean; data?: AttendanceStatus[]; error?: string }> {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const employees = await employeeService.getActive();
     const attendances = await attendanceService.getAll();
     
     const plainEmployees = employees.map(toPlainEmployee);
     const plainAttendances = attendances.map(toPlainAttendance);
-
-    console.log("Empleados:", plainEmployees);
-    console.log("Asistencias:", plainAttendances);
 
     const status: AttendanceStatus[] = plainEmployees.map((employee) => {
       const employeeRecords = plainAttendances.filter((a) => a.employeeId === employee.id);
@@ -337,6 +347,8 @@ export async function getAttendanceStatus(): Promise<{ success: boolean; data?: 
 
 export async function getDashboardStats(): Promise<{ success: boolean; data?: DashboardStats; error?: string }> {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const employees = await employeeService.getActive();
     const attendances = await attendanceService.getAll();
@@ -426,6 +438,8 @@ export async function getDashboardStats(): Promise<{ success: boolean; data?: Da
 
 export async function getEmployeeWeeklyTurns(employeeId: string): Promise<{ success: boolean; data?: { turns: Turn[]; monday: string; sunday: string }; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employee = await employeeService.getById(employeeId);
     if (!employee) {
@@ -490,6 +504,8 @@ export async function getEmployeeMonthlyTurns(
   year?: number
 ): Promise<{ success: boolean; data?: { turns: Turn[]; monthStart: string; monthEnd: string }; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employee = await employeeService.getById(employeeId);
     if (!employee) {
@@ -547,6 +563,8 @@ export async function getEmployeeMonthlyTurns(
 
 export async function getPayweekTurns(employeeId: string): Promise<{ success: boolean; data?: { turns: Turn[]; start: string; end: string }; error?: string }> {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employee = await employeeService.getById(employeeId);
     if (!employee) {

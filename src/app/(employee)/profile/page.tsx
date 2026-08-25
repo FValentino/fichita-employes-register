@@ -49,8 +49,8 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     const supabase = createSupabaseClient();
     await supabase.auth.signOut();
-    // Clear role cookie
-    document.cookie = "fichita-role=; path=/; max-age=0";
+    // Clear httpOnly role cookie via server-side API
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     router.push("/login");
   };
 

@@ -7,5 +7,13 @@ export async function POST(request: Request) {
     return rateLimit.response;
   }
 
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true });
+
+  // Clear the httpOnly role cookie server-side
+  response.headers.set(
+    "Set-Cookie",
+    "fichita-role=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly; Secure"
+  );
+
+  return response;
 }

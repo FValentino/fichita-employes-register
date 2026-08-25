@@ -18,8 +18,6 @@ export default async function AttendancePage() {
 
   const status = result.data ?? [];
 
-  console.log(status);
-
   return (
     <div className="p-4">
       <PageTitle>Registrar Asistencia</PageTitle>

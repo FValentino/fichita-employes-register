@@ -94,6 +94,22 @@ public async findById(id: string): Promise<Attendance | null> {
     });
   }
 
+  /**
+   * Batch query: fetch attendances for ALL employees in a date range.
+   * Replaces the N+1 pattern of querying per-employee in a loop.
+   */
+  public async findByDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<Attendance[]> {
+    return this.repository.find({
+      where: {
+        timestamp: Between(startDate, endDate),
+      },
+      order: { timestamp: "ASC" },
+    });
+  }
+
   public async findTodayByEmployee(employeeId: string): Promise<Attendance[]> {
     return this.findByEmployeeAndDate(employeeId, new Date());
   }

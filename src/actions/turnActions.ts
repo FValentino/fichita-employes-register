@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { employeeTurnService } from "@/backend/services/EmployeeTurnService";
 import { waitForDb } from "@/backend/datasource";
-import { BulkCreateTurnsDTO } from "@/backend/types/employeeTurns";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
+import { bulkCreateTurnsSchema } from "@/lib/validations";
 
 function toPlainTurn(turn: any) {
   return {
@@ -31,12 +31,18 @@ export async function getEmployeeTurns(employeeId: string) {
   }
 }
 
-export async function saveEmployeeTurns(data: BulkCreateTurnsDTO) {
+export async function saveEmployeeTurns(data: unknown) {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    await employeeTurnService.bulkUpsert(data);
+
+    const parsed = bulkCreateTurnsSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    await employeeTurnService.bulkUpsert(parsed.data);
     revalidatePath("/dashboard/employees");
     revalidatePath("/dashboard");
     return { success: true };

@@ -4,19 +4,8 @@ import { revalidatePath } from "next/cache";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { auditLogService } from "@/backend/services/AuditLogService";
 import { waitForDb } from "@/backend/datasource";
-import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
-
-function toPlainAttendance(attendance: any) {
-  return {
-    id: attendance.id,
-    employeeId: attendance.employee_id,
-    recordedBy: attendance.recorded_by,
-    type: attendance.type,
-    timestamp: attendance.timestamp,
-    createdAt: attendance.created_at,
-  };
-}
+import { createEmployeeSchema, updateEmployeeSchema } from "@/lib/validations";
 
 function toPlainEmployee(employee: any) {
   return {
@@ -35,7 +24,7 @@ function toPlainEmployee(employee: any) {
   };
 }
 
-function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
+function formatEmployeeData(data: Record<string, unknown>) {
   const capitalize = (str: string) => {
     const trimmed = str.trim();
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
@@ -43,8 +32,8 @@ function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
 
   return {
     ...data,
-    name: data.name ? capitalize(data.name) : undefined,
-    lastName: data.lastName ? data.lastName.toUpperCase().trim() : undefined,
+    name: typeof data.name === "string" ? capitalize(data.name) : undefined,
+    lastName: typeof data.lastName === "string" ? data.lastName.toUpperCase().trim() : undefined,
   };
 }
 
@@ -107,13 +96,19 @@ export async function getActiveEmployees() {
   }
 }
 
-export async function createEmployee(data: CreateEmployeeDTO) {
+export async function createEmployee(data: unknown) {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const formattedData = formatEmployeeData(data) as CreateEmployeeDTO;
-    const employee = await employeeService.create(formattedData);
+
+    const parsed = createEmployeeSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
+
+    const formattedData = formatEmployeeData(parsed.data);
+    const employee = await employeeService.create(formattedData as any);
     revalidatePath("/dashboard/employees");
     revalidatePath("/dashboard");
     return { success: true, data: toPlainEmployee(employee) };
@@ -122,11 +117,16 @@ export async function createEmployee(data: CreateEmployeeDTO) {
   }
 }
 
-export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
+export async function updateEmployee(id: string, data: unknown) {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
+
+    const parsed = updateEmployeeSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0].message };
+    }
 
     // Get current employee data for audit log
     const currentEmployee = await employeeService.getById(id);
@@ -134,8 +134,8 @@ export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
       return { success: false, error: "Empleado no encontrado" };
     }
 
-    const formattedData = formatEmployeeData(data) as UpdateEmployeeDTO;
-    const employee = await employeeService.update(id, formattedData);
+    const formattedData = formatEmployeeData(parsed.data);
+    const employee = await employeeService.update(id, formattedData as any);
     if (!employee) {
       return { success: false, error: "Empleado no encontrado" };
     }
@@ -183,30 +183,11 @@ export async function deleteEmployee(id: string) {
   }
 }
 
-export interface EmployeeWithTurns {
-  id: string;
-  name: string;
-  lastName: string;
-  hourlyRate: number;
-  weeklyHours: number;
-  turns: Array<{
-    id: number;
-    entryTime: Date | null;
-    exitTime: Date | null;
-    isOpen: boolean;
-  }>;
-  totalHours: number;
-  weeklySalary: number;
-  workDays: number;
-}
-
 export async function getEmployeesWithWeeklyTurns() {
   try {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const employees = await employeeService.getActive();
-    const result: EmployeeWithTurns[] = [];
 
     const today = new Date();
     const dayOfWeek = today.getDay();
@@ -219,63 +200,11 @@ export async function getEmployeesWithWeeklyTurns() {
     sunday.setHours(23, 59, 59, 999);
 
     const { attendanceService } = await import("@/backend/services/AttendanceService");
+    const { computeTurnsForEmployees } = await import("@/lib/turn-calculation");
 
-    for (const emp of employees) {
-      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, monday, sunday);
-      const plainAttendances = attendances.map(toPlainAttendance);
-      
-      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
-      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
-
-      const turns: Array<{
-        id: number;
-        entryTime: Date | null;
-        exitTime: Date | null;
-        isOpen: boolean;
-      }> = [];
-
-      entries.forEach((entry: any, index: number) => {
-        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
-        turns.push({
-          id: index,
-          entryTime: entry.timestamp,
-          exitTime: exit ? exit.timestamp : null,
-          isOpen: !exit,
-        });
-      });
-
-      let totalMinutes = 0;
-      for (const turn of turns) {
-        if (turn.entryTime && turn.exitTime) {
-          const entry = new Date(turn.entryTime).getTime();
-          const exit = new Date(turn.exitTime).getTime();
-          totalMinutes += (exit - entry) / (1000 * 60);
-        }
-      }
-
-      const totalHours = totalMinutes / 60;
-      const weeklySalary = totalHours * Number(emp.hourlyRate);
-
-      const uniqueDays = new Set<string>();
-      turns.forEach((turn: any) => {
-        if (turn.entryTime) {
-          const date = new Date(turn.entryTime);
-          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
-        }
-      });
-
-      result.push({
-        id: emp.id,
-        name: emp.name,
-        lastName: emp.lastName,
-        hourlyRate: Number(emp.hourlyRate),
-        weeklyHours: Number(emp.weeklyHours),
-        turns,
-        totalHours,
-        weeklySalary,
-        workDays: uniqueDays.size,
-      });
-    }
+    const employees = await employeeService.getActive();
+    const allAttendances = await attendanceService.getByDateRange(monday, sunday);
+    const result = computeTurnsForEmployees(employees, allAttendances);
 
     return {
       success: true,
@@ -295,71 +224,17 @@ export async function getEmployeesWithMonthlyTurns() {
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const employees = await employeeService.getActive();
-    const result: EmployeeWithTurns[] = [];
 
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
     const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
 
     const { attendanceService } = await import("@/backend/services/AttendanceService");
+    const { computeTurnsForEmployees } = await import("@/lib/turn-calculation");
 
-    for (const emp of employees) {
-      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);
-      const plainAttendances = attendances.map(toPlainAttendance);
-      
-      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
-      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
-
-      const turns: Array<{
-        id: number;
-        entryTime: Date | null;
-        exitTime: Date | null;
-        isOpen: boolean;
-      }> = [];
-
-      entries.forEach((entry: any, index: number) => {
-        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
-        turns.push({
-          id: index,
-          entryTime: entry.timestamp,
-          exitTime: exit ? exit.timestamp : null,
-          isOpen: !exit,
-        });
-      });
-
-      let totalMinutes = 0;
-      for (const turn of turns) {
-        if (turn.entryTime && turn.exitTime) {
-          const entry = new Date(turn.entryTime).getTime();
-          const exit = new Date(turn.exitTime).getTime();
-          totalMinutes += (exit - entry) / (1000 * 60);
-        }
-      }
-
-      const totalHours = totalMinutes / 60;
-      const weeklySalary = totalHours * Number(emp.hourlyRate);
-
-      const uniqueDays = new Set<string>();
-      turns.forEach((turn: any) => {
-        if (turn.entryTime) {
-          const date = new Date(turn.entryTime);
-          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
-        }
-      });
-
-      result.push({
-        id: emp.id,
-        name: emp.name,
-        lastName: emp.lastName,
-        hourlyRate: Number(emp.hourlyRate),
-        weeklyHours: Number(emp.weeklyHours),
-        turns,
-        totalHours,
-        weeklySalary,
-        workDays: uniqueDays.size,
-      });
-    }
+    const employees = await employeeService.getActive();
+    const allAttendances = await attendanceService.getByDateRange(firstDay, lastDay);
+    const result = computeTurnsForEmployees(employees, allAttendances);
 
     return {
       success: true,
@@ -379,73 +254,19 @@ export async function getEmployeesWithMonthlyTurnsForPeriod(month?: number, year
     const guard = await requireAdmin();
     if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
-    const employees = await employeeService.getActive();
-    const result: EmployeeWithTurns[] = [];
 
     const targetMonth = month ?? new Date().getMonth() + 1;
     const targetYear = year ?? new Date().getFullYear();
-    
+
     const firstDay = new Date(targetYear, targetMonth - 1, 1);
     const lastDay = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
 
     const { attendanceService } = await import("@/backend/services/AttendanceService");
+    const { computeTurnsForEmployees } = await import("@/lib/turn-calculation");
 
-    for (const emp of employees) {
-      const attendances = await attendanceService.getByEmployeeAndDateRange(emp.id, firstDay, lastDay);
-      const plainAttendances = attendances.map(toPlainAttendance);
-      
-      const entries = plainAttendances.filter((a: any) => a.type === "ENTRADA");
-      const exits = plainAttendances.filter((a: any) => a.type === "SALIDA");
-
-      const turns: Array<{
-        id: number;
-        entryTime: Date | null;
-        exitTime: Date | null;
-        isOpen: boolean;
-      }> = [];
-
-      entries.forEach((entry: any, index: number) => {
-        const exit = exits.find((e: any) => new Date(e.timestamp) > new Date(entry.timestamp));
-        turns.push({
-          id: index,
-          entryTime: entry.timestamp,
-          exitTime: exit ? exit.timestamp : null,
-          isOpen: !exit,
-        });
-      });
-
-      let totalMinutes = 0;
-      for (const turn of turns) {
-        if (turn.entryTime && turn.exitTime) {
-          const entry = new Date(turn.entryTime).getTime();
-          const exit = new Date(turn.exitTime).getTime();
-          totalMinutes += (exit - entry) / (1000 * 60);
-        }
-      }
-
-      const totalHours = totalMinutes / 60;
-      const weeklySalary = totalHours * Number(emp.hourlyRate);
-
-      const uniqueDays = new Set<string>();
-      turns.forEach((turn: any) => {
-        if (turn.entryTime) {
-          const date = new Date(turn.entryTime);
-          uniqueDays.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
-        }
-      });
-
-      result.push({
-        id: emp.id,
-        name: emp.name,
-        lastName: emp.lastName,
-        hourlyRate: Number(emp.hourlyRate),
-        weeklyHours: Number(emp.weeklyHours),
-        turns,
-        totalHours,
-        weeklySalary,
-        workDays: uniqueDays.size,
-      });
-    }
+    const employees = await employeeService.getActive();
+    const allAttendances = await attendanceService.getByDateRange(firstDay, lastDay);
+    const result = computeTurnsForEmployees(employees, allAttendances);
 
     return {
       success: true,

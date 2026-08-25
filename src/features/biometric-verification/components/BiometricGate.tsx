@@ -51,8 +51,9 @@ export function BiometricGate({
 
   // The availability probe decides the initial mode: no platform
   // authenticator means the password form renders without ever attempting
-  // a WebAuthn ceremony. Derived at render time instead of synced via effect.
-  const biometricsUnavailable = platformAuthenticatorAvailable === false;
+  // a WebAuthn ceremony. While loading (null), treat as unavailable to
+  // prevent the browser from showing a QR code for cross-device auth.
+  const biometricsUnavailable = platformAuthenticatorAvailable !== true;
   const effectivePhase: GatePhase = useMemo(
     () =>
       phase.kind === "idle" && biometricsUnavailable

@@ -1,3 +1,20 @@
+/**
+ * Rate limiter — in-memory implementation.
+ *
+ * ⚠️  SERVERLESS LIMITATION: In Vercel/serverless deployments, each function
+ * invocation may start a fresh Node.js process. The in-memory Map does NOT
+ * persist across invocations or instances, so an attacker hitting multiple
+ * cold starts can bypass the limit.
+ *
+ * For production, replace this with an external store:
+ *   - Upstash Redis (recommended for Vercel): https://upstash.com/blog/rate-limiting-nextjs
+ *   - Vercel KV (Redis-based)
+ *   - A Supabase table with TTL cleanup
+ *
+ * With 10 employees (~600 requests/month), the risk is low. But if the app
+ * scales or faces external traffic, migrate to Upstash.
+ */
+
 interface RateLimitEntry {
   count: number;
   resetAt: number;
@@ -5,15 +22,17 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
+// NOTE: setInterval does NOT work reliably in serverless — the process
+// may be garbage-collected after the request. The cleanup below runs
+// opportunistically on each request instead.
+function cleanupExpired(): void {
   const now = Date.now();
   for (const [key, entry] of store.entries()) {
     if (now > entry.resetAt) {
       store.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}
 
 export interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -24,11 +43,12 @@ export function checkRateLimit(
   key: string,
   config: RateLimitConfig
 ): { allowed: boolean; remaining: number; resetAt: number } {
+  cleanupExpired();
+
   const now = Date.now();
   const entry = store.get(key);
 
   if (!entry || now > entry.resetAt) {
-    // New window
     store.set(key, {
       count: 1,
       resetAt: now + config.windowMs,

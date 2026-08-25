@@ -8,6 +8,7 @@ import {
 } from "@/backend/models/WebAuthnStepUpToken";
 import { webAuthnStepUpTokenRepository } from "@/backend/repositories/WebAuthnStepUpTokenRepository";
 import { auditLogService } from "@/backend/services/AuditLogService";
+import { settingService } from "@/backend/services/SettingService";
 import { getSessionEmployee } from "@/lib/auth/session";
 
 /**
@@ -26,17 +27,35 @@ export interface VerifyStepUpPasswordResult {
 }
 
 /**
- * Account-level lockout (in-memory, same tradeoff as the shared rate
- * limiter): 5 consecutive failures lock verification for 15 minutes.
- * A success resets the counter.
+ * Account-level lockout — persisted in the Setting table so it survives
+ * cold starts and works across serverless instances.
+ * 5 consecutive failures lock verification for 15 minutes.
  */
 const MAX_CONSECUTIVE_FAILURES = 5;
 const LOCKOUT_WINDOW_MS = 15 * 60 * 1000;
 
-const failureTracker = new Map<
-  string,
-  { count: number; lockedUntil: number }
->();
+function lockoutKey(employeeId: string): string {
+  return `lockout:${employeeId}`;
+}
+
+async function getLockout(employeeId: string): Promise<{ count: number; lockedUntil: number } | null> {
+  const value = await settingService.get(lockoutKey(employeeId));
+  if (!value) return null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+async function setLockout(employeeId: string, count: number, lockedUntil: number): Promise<void> {
+  await settingService.set(lockoutKey(employeeId), JSON.stringify({ count, lockedUntil }));
+}
+
+async function clearLockout(employeeId: string): Promise<void> {
+  // Setting model has no delete, but setting to empty is fine — getLockout returns null on parse failure
+  await settingService.set(lockoutKey(employeeId), "");
+}
 
 function createAnonSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -90,7 +109,7 @@ export async function verifyStepUpPassword(
     }
 
     const now = Date.now();
-    const entry = failureTracker.get(employee.id);
+    const entry = await getLockout(employee.id);
     if (entry && entry.lockedUntil > now) {
       // Generic message: do not leak remaining cooldown length.
       return {
@@ -107,17 +126,17 @@ export async function verifyStepUpPassword(
 
     if (error) {
       const count = (entry?.count ?? 0) + 1;
-      failureTracker.set(employee.id, {
+      await setLockout(
+        employee.id,
         count,
-        lockedUntil:
-          count >= MAX_CONSECUTIVE_FAILURES ? now + LOCKOUT_WINDOW_MS : 0,
-      });
+        count >= MAX_CONSECUTIVE_FAILURES ? now + LOCKOUT_WINDOW_MS : 0
+      );
       await audit("pwd_fallback_failed", employee.id);
       // Generic message per spec: wrong password vs locked are indistinguishable.
       return { success: false, error: "Invalid credentials" };
     }
 
-    failureTracker.delete(employee.id);
+    await clearLockout(employee.id);
 
     const stepUpToken = await webAuthnStepUpTokenRepository.issue(
       employee.id,

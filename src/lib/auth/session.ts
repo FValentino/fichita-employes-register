@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { Employee } from "@/backend/models/Employee";
 import { employeeRepository } from "@/backend/repositories/EmployeeRepository";
+import { waitForDb } from "@/backend/datasource";
 
 /**
  * Server-side Supabase session resolution.
@@ -64,5 +65,6 @@ export async function getSessionEmployee(): Promise<Employee | null> {
   if (!sessionUser) {
     return null;
   }
+  await waitForDb();
   return employeeRepository.findByAuthUserId(sessionUser.authUserId);
 }

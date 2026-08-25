@@ -16,6 +16,7 @@ class Database {
   private static instance: Database | null = null;
   private dataSource: DataSource;
   private initPromise: Promise<void> | null = null;
+  private initFailed = false;
 
   private constructor() {
     this.dataSource = new DataSource({
@@ -40,7 +41,6 @@ class Database {
         options: "-c timezone=America/Argentina/Buenos_Aires",
       },
     });
-    this.initPromise = this.initialize();
   }
 
   public static getInstance(): Database {
@@ -55,15 +55,22 @@ class Database {
   }
 
   public async initialize(): Promise<void> {
-    if (!this.dataSource.isInitialized) {
-      await this.dataSource.initialize();
+    if (this.dataSource.isInitialized) {
+      this.initFailed = false;
+      return;
     }
+    await this.dataSource.initialize();
   }
 
   public async waitForInit(): Promise<void> {
-    if (this.initPromise) {
-      await this.initPromise;
+    // If previous init failed or never started, retry
+    if (this.initFailed || !this.initPromise) {
+      this.initPromise = this.initialize().catch((err) => {
+        this.initFailed = true;
+        throw err;
+      });
     }
+    await this.initPromise;
   }
 }
 

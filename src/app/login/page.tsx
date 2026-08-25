@@ -33,11 +33,13 @@ export default function LoginPage() {
 
     // Look up employee role to determine redirect destination
     try {
-      const res = await fetch(`/api/employee/role?authUserId=${data.user.id}`);
+      const res = await fetch(`/api/employee/role?authUserId=${data.user.id}`, {
+        credentials: "include",
+      });
       if (res.ok) {
         const { role } = await res.json();
-        // Store role in cookie for middleware to read
-        document.cookie = `fichita-role=${role}; path=/; max-age=86400; SameSite=Lax`;
+        // Role cookie is set server-side via Set-Cookie header (httpOnly).
+        // No client-side document.cookie needed.
         router.push(role === "admin" ? "/dashboard" : "/home");
       } else {
         router.push("/home");

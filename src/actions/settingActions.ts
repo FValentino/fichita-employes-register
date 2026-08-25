@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { settingService } from "@/backend/services/SettingService";
 import { waitForDb } from "@/backend/datasource";
+import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 
 function toPlainSetting(setting: any) {
   return {
@@ -16,6 +17,8 @@ function toPlainSetting(setting: any) {
 
 export async function getSettings() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const settings = await settingService.getAll();
     return { success: true, data: settings.map(toPlainSetting) };
@@ -26,6 +29,8 @@ export async function getSettings() {
 
 export async function getSetting(key: string) {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const value = await settingService.get(key);
     return { success: true, data: value };
@@ -36,6 +41,8 @@ export async function getSetting(key: string) {
 
 export async function setSetting(key: string, value: string, description?: string) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     await settingService.set(key, value, description);
     revalidatePath("/dashboard/settings");
@@ -55,6 +62,8 @@ export async function setPhotoRequirement(enabled: boolean) {
 
 export async function getPhotoRequirement() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const enabled = await settingService.getBoolean("require_scan_photo", false);
     return { success: true, data: enabled };

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { employeeService } from "@/backend/services/EmployeeService";
 import { waitForDb } from "@/backend/datasource";
 import { createClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/auth/guard";
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,6 +21,8 @@ export async function inviteEmployee(
   password: string
 ) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
 
     // Check employee exists

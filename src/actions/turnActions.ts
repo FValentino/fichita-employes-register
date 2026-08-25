@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { employeeTurnService } from "@/backend/services/EmployeeTurnService";
 import { waitForDb } from "@/backend/datasource";
 import { BulkCreateTurnsDTO } from "@/backend/types/employeeTurns";
+import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 
 function toPlainTurn(turn: any) {
   return {
@@ -20,6 +21,8 @@ function toPlainTurn(turn: any) {
 
 export async function getEmployeeTurns(employeeId: string) {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const turns = await employeeTurnService.getByEmployee(employeeId);
     return { success: true, data: turns.map(toPlainTurn) };
@@ -30,6 +33,8 @@ export async function getEmployeeTurns(employeeId: string) {
 
 export async function saveEmployeeTurns(data: BulkCreateTurnsDTO) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     await employeeTurnService.bulkUpsert(data);
     revalidatePath("/dashboard/employees");
@@ -42,6 +47,8 @@ export async function saveEmployeeTurns(data: BulkCreateTurnsDTO) {
 
 export async function deleteEmployeeTurn(id: number) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const deleted = await employeeTurnService.delete(id);
     return { success: deleted };

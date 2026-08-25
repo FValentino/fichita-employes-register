@@ -5,6 +5,7 @@ import { employeeService } from "@/backend/services/EmployeeService";
 import { auditLogService } from "@/backend/services/AuditLogService";
 import { waitForDb } from "@/backend/datasource";
 import { CreateEmployeeDTO, UpdateEmployeeDTO } from "@/backend/types/employees";
+import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 
 function toPlainAttendance(attendance: any) {
   return {
@@ -49,6 +50,8 @@ function formatEmployeeData(data: CreateEmployeeDTO | UpdateEmployeeDTO) {
 
 export async function getEmployees() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employees = await employeeService.getAll();
     const plainEmployees = employees.map(toPlainEmployee);
@@ -61,6 +64,8 @@ export async function getEmployees() {
 
 export async function getEmployee(id: string) {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employee = await employeeService.getById(id);
     if (!employee) {
@@ -74,6 +79,8 @@ export async function getEmployee(id: string) {
 
 export async function getEmployeeByAuthUserId(authUserId: string) {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const { AppDataSource } = await import("@/backend/datasource");
     const { Employee } = await import("@/backend/models/Employee");
@@ -90,6 +97,8 @@ export async function getEmployeeByAuthUserId(authUserId: string) {
 
 export async function getActiveEmployees() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const employees = await employeeService.getActive();
     return { success: true, data: employees.map(toPlainEmployee) };
@@ -100,6 +109,8 @@ export async function getActiveEmployees() {
 
 export async function createEmployee(data: CreateEmployeeDTO) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const formattedData = formatEmployeeData(data) as CreateEmployeeDTO;
     const employee = await employeeService.create(formattedData);
@@ -113,6 +124,8 @@ export async function createEmployee(data: CreateEmployeeDTO) {
 
 export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
 
     // Get current employee data for audit log
@@ -156,6 +169,8 @@ export async function updateEmployee(id: string, data: UpdateEmployeeDTO) {
 
 export async function deleteEmployee(id: string) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const deleted = await employeeService.delete(id);
     if (deleted) {
@@ -187,6 +202,8 @@ export interface EmployeeWithTurns {
 
 export async function getEmployeesWithWeeklyTurns() {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];
@@ -275,6 +292,8 @@ export async function getEmployeesWithWeeklyTurns() {
 
 export async function getEmployeesWithMonthlyTurns() {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];
@@ -357,6 +376,8 @@ export async function getEmployeesWithMonthlyTurns() {
 
 export async function getEmployeesWithMonthlyTurnsForPeriod(month?: number, year?: number) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const employees = await employeeService.getActive();
     const result: EmployeeWithTurns[] = [];

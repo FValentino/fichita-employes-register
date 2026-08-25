@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { locationService } from "@/backend/services/LocationService";
 import { waitForDb } from "@/backend/datasource";
 import { CreateLocationDTO, UpdateLocationDTO } from "@/backend/types/locations";
+import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 
 function toPlainLocation(location: any) {
   return {
@@ -21,6 +22,8 @@ function toPlainLocation(location: any) {
 
 export async function getLocations() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const locations = await locationService.getAll();
     return { success: true, data: locations.map(toPlainLocation) };
@@ -31,6 +34,8 @@ export async function getLocations() {
 
 export async function getActiveLocations() {
   try {
+    const auth = await requireAuth();
+    if (!auth) return { success: false, error: "No autenticado" };
     await waitForDb();
     const locations = await locationService.getActive();
     return { success: true, data: locations.map(toPlainLocation) };
@@ -41,6 +46,8 @@ export async function getActiveLocations() {
 
 export async function createLocation(data: CreateLocationDTO) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const location = await locationService.create(data);
     revalidatePath("/dashboard/locations");
@@ -52,6 +59,8 @@ export async function createLocation(data: CreateLocationDTO) {
 
 export async function updateLocation(id: string, data: UpdateLocationDTO) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const location = await locationService.update(id, data);
     if (!location) {
@@ -66,6 +75,8 @@ export async function updateLocation(id: string, data: UpdateLocationDTO) {
 
 export async function deleteLocation(id: string) {
   try {
+    const guard = await requireAdmin();
+    if (guard.error) return { success: false, error: guard.error };
     await waitForDb();
     const deleted = await locationService.delete(id);
     if (deleted) {

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createSupabaseClient } from "@/lib/supabase";
 import { menuItems, MenuItem } from "./menuItems";
 
 function MenuLink({ item, onClick }: { item: MenuItem; onClick?: () => void }) {
@@ -65,6 +66,14 @@ function CloseIcon() {
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = createSupabaseClient();
+    await supabase.auth.signOut();
+    document.cookie = "fichita-role=; path=/; max-age=0";
+    router.push("/login");
+  };
 
   return (
     <>
@@ -117,7 +126,27 @@ export function Sidebar() {
         </nav>
 
         <div className="p-4 md:p-6 border-t border-gray-600">
-          <p className="text-gray-400 text-xs text-center m-0">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-gray-700 transition-colors cursor-pointer bg-transparent border-none text-left"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9"
+              />
+            </svg>
+            <span className="text-sm">Cerrar sesión</span>
+          </button>
+          <p className="text-gray-400 text-xs text-center m-0 mt-3">
             v1.0
           </p>
         </div>

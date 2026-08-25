@@ -5,7 +5,9 @@ import { settingService } from "@/backend/services/SettingService";
 import { waitForDb } from "@/backend/datasource";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 
-function toPlainSetting(setting: any) {
+import { Setting } from "@/backend/models/Setting";
+
+function toPlainSetting(setting: Setting) {
   return {
     key: setting.key,
     value: setting.value,

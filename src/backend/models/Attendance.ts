@@ -34,6 +34,9 @@ export class Attendance {
     verificationMethod?: "biometric" | "password";
   } | null;
 
+  @Column({ type: "uuid", nullable: true })
+  recordedBy!: string | null;
+
   @CreateDateColumn()
   created_at!: Date;
 }

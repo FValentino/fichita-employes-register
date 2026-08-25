@@ -6,7 +6,9 @@ import { waitForDb } from "@/backend/datasource";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 import { createLocationSchema, updateLocationSchema } from "@/lib/validations";
 
-function toPlainLocation(location: any) {
+import { Location } from "@/backend/models/Location";
+
+function toPlainLocation(location: Location) {
   return {
     id: location.id,
     name: location.name,
@@ -15,8 +17,8 @@ function toPlainLocation(location: any) {
     radiusMeters: location.radiusMeters,
     address: location.address,
     active: location.active,
-    createdAt: location.createdAt,
-    updatedAt: location.updatedAt,
+    createdAt: location.createdAt.toISOString(),
+    updatedAt: location.updatedAt.toISOString(),
   };
 }
 

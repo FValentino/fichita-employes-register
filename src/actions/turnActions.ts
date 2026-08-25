@@ -6,7 +6,9 @@ import { waitForDb } from "@/backend/datasource";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
 import { bulkCreateTurnsSchema } from "@/lib/validations";
 
-function toPlainTurn(turn: any) {
+import { EmployeeTurn } from "@/backend/models/EmployeeTurn";
+
+function toPlainTurn(turn: EmployeeTurn) {
   return {
     id: turn.id,
     employeeId: turn.employeeId,

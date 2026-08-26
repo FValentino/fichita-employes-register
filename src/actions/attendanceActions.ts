@@ -12,6 +12,8 @@ import type { StepUpIntent } from "@/backend/models/WebAuthnStepUpToken";
 import { webAuthnStepUpTokenRepository } from "@/backend/repositories/WebAuthnStepUpTokenRepository";
 import { getSessionEmployee } from "@/lib/auth/session";
 import { requireAuth, requireAdmin } from "@/lib/auth/guard";
+import { validateLocation } from "@/lib/geolocation";
+import type { GeoCoordinates } from "@/lib/geolocation";
 import type { Attendance, AttendanceWithEmployee, EmployeeBasic, AttendanceStatus, DashboardStats, Turn } from "@/types/attendance";
 
 export type Turno = {
@@ -39,6 +41,8 @@ interface RecordAttendanceInput {
     userAgent?: string;
     verificationMethod?: "biometric" | "password";
   } | null;
+  /** GPS coordinates from the employee's device (optional — validated server-side). */
+  location?: GeoCoordinates | null;
 }
 
 export interface ActionResult {
@@ -218,6 +222,11 @@ export async function recordAttendance(
   data: RecordAttendanceInput
 ): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
   try {
+    const sessionEmployee = await getSessionEmployee();
+    if (!sessionEmployee) {
+      return { success: false, error: AUTHORIZATION_ERRORS.unauthenticated, code: "unauthenticated" };
+    }
+
     const authorization = await authorizeAttendance(data);
     if (!authorization.authorized) {
       return {
@@ -225,6 +234,14 @@ export async function recordAttendance(
         error: AUTHORIZATION_ERRORS[authorization.code],
         code: authorization.code,
       };
+    }
+
+    // Geolocation validation — admins bypass entirely.
+    if (sessionEmployee.role !== UserRole.ADMIN) {
+      const geoResult = await validateLocation(data.location ?? null);
+      if (!geoResult.valid) {
+        return { success: false, error: geoResult.error, code: geoResult.code };
+      }
     }
 
     const attendance = await attendanceService.record({
@@ -253,9 +270,10 @@ export async function recordEntry(
     fingerprint?: string;
     userAgent?: string;
     verificationMethod?: "biometric" | "password";
-  } | null
+  } | null,
+  location?: GeoCoordinates | null
 ): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
-  return recordAttendance({ employeeId, type: AttendanceType.ENTRADA, stepUpToken, deviceInfo });
+  return recordAttendance({ employeeId, type: AttendanceType.ENTRADA, stepUpToken, deviceInfo, location });
 }
 
 /**
@@ -268,9 +286,10 @@ export async function recordExit(
     fingerprint?: string;
     userAgent?: string;
     verificationMethod?: "biometric" | "password";
-  } | null
+  } | null,
+  location?: GeoCoordinates | null
 ): Promise<ActionResult & { data?: AttendanceWithEmployee }> {
-  return recordAttendance({ employeeId, type: AttendanceType.SALIDA, stepUpToken, deviceInfo });
+  return recordAttendance({ employeeId, type: AttendanceType.SALIDA, stepUpToken, deviceInfo, location });
 }
 
 /**

@@ -50,11 +50,6 @@ class Database {
   }
 
   public getDataSource(): DataSource {
-    if (!this.dataSource.isInitialized) {
-      throw new Error(
-        "DataSource not initialized — call waitForDb() before using repositories"
-      );
-    }
     return this.dataSource;
   }
 

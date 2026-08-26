@@ -3,10 +3,25 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { recordEntry, recordExit } from "@/actions";
+import type { GeoCoordinates } from "@/lib/geolocation";
 
 interface RegisterAttendanceButtonProps {
   employeeId: string;
   isWorking: boolean;
+}
+
+function getCurrentPosition(): Promise<GeoCoordinates | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
 }
 
 export function RegisterAttendanceButton({ employeeId, isWorking: initialIsWorking }: RegisterAttendanceButtonProps) {
@@ -19,12 +34,18 @@ export function RegisterAttendanceButton({ employeeId, isWorking: initialIsWorki
     setError(null);
     
     startTransition(async () => {
+      const location = await getCurrentPosition();
+      if (!location) {
+        setError("Debes permitir el acceso a tu ubicación");
+        return;
+      }
+
       let result;
       
       if (isWorking) {
-        result = await recordExit(employeeId);
+        result = await recordExit(employeeId, undefined, undefined, location);
       } else {
-        result = await recordEntry(employeeId);
+        result = await recordEntry(employeeId, undefined, undefined, location);
       }
 
       if (!result.success) {

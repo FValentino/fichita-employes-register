@@ -24,6 +24,9 @@ jest.mock("@/lib/auth/session", () => ({
 jest.mock("@/backend/repositories/WebAuthnStepUpTokenRepository", () => ({
   webAuthnStepUpTokenRepository: { consume: jest.fn() },
 }));
+jest.mock("@/lib/geolocation", () => ({
+  validateLocation: jest.fn().mockResolvedValue({ valid: true }),
+}));
 
 import { recordAttendance, recordEntry, recordExit, updateAttendanceTimestamp } from "@/actions/attendanceActions";
 import { attendanceService } from "@/backend/services/AttendanceService";

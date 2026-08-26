@@ -7,6 +7,25 @@ import { recordEntry, recordExit, getEmployeeTodayAttendances, getEmployeeByAuth
 import { BiometricGate } from "@/features/biometric-verification";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { HiCamera, HiCheckCircle, HiArrowLeft } from "react-icons/hi2";
+import type { GeoCoordinates } from "@/lib/geolocation";
+
+/**
+ * Requests the device GPS position. Returns null if permission is denied
+ * or the device doesn't support geolocation.
+ */
+function getCurrentPosition(): Promise<GeoCoordinates | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  });
+}
 
 export default function ScannerPage() {
   const [employeeId, setEmployeeId] = useState<string | null>(null);
@@ -56,6 +75,20 @@ export default function ScannerPage() {
     setStatus("processing");
     setMessage("");
 
+    // Acquire GPS before recording — server validates the coordinates.
+    const location = await getCurrentPosition();
+    if (isAdmin && !location) {
+      // Admins bypass geo-check, so missing GPS is fine.
+    } else if (!location) {
+      setStatus("error");
+      setMessage("Debes permitir el acceso a tu ubicación");
+      setTimeout(() => {
+        setStatus("ready");
+        setMessage("");
+      }, 3000);
+      return;
+    }
+
     const action = type === "ENTRADA" ? recordEntry : recordExit;
     // Non-admins must present a fresh single-use step-up token; the server
     // consumes it atomically before inserting the record.
@@ -64,7 +97,7 @@ export default function ScannerPage() {
       userAgent: navigator.userAgent,
       verificationMethod: stepUpToken ? "biometric" as const : "password" as const,
     };
-    const result = await action(employeeId, stepUpToken, deviceInfo);
+    const result = await action(employeeId, stepUpToken, deviceInfo, location);
 
     if (result.success) {
       setStatus("success");

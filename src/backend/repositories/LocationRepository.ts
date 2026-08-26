@@ -5,10 +5,16 @@ import { CreateLocationDTO, UpdateLocationDTO } from "../types/locations";
 
 class LocationRepository {
   private static instance: LocationRepository | null = null;
-  private repository: Repository<Location>;
+  private _repository: Repository<Location> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(Location);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<Location> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Location);
+    }
+    return this._repository;
   }
 
   public static getInstance(): LocationRepository {

@@ -5,10 +5,16 @@ import { CreateEmployeeTurnDTO, UpdateEmployeeTurnDTO } from "../types/employeeT
 
 class EmployeeTurnRepository {
   private static instance: EmployeeTurnRepository | null = null;
-  private repository: Repository<EmployeeTurn>;
+  private _repository: Repository<EmployeeTurn> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(EmployeeTurn);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<EmployeeTurn> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(EmployeeTurn);
+    }
+    return this._repository;
   }
 
   public static getInstance(): EmployeeTurnRepository {

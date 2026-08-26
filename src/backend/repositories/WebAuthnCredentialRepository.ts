@@ -15,10 +15,16 @@ export interface RegisterCredentialData {
 
 class WebAuthnCredentialRepository {
   private static instance: WebAuthnCredentialRepository | null = null;
-  private repository: Repository<WebAuthnCredential>;
+  private _repository: Repository<WebAuthnCredential> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(WebAuthnCredential);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<WebAuthnCredential> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(WebAuthnCredential);
+    }
+    return this._repository;
   }
 
   public static getInstance(): WebAuthnCredentialRepository {

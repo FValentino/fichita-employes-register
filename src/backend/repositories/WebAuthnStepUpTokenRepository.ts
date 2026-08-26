@@ -17,10 +17,16 @@ function hashRawToken(rawToken: string): string {
 
 class WebAuthnStepUpTokenRepository {
   private static instance: WebAuthnStepUpTokenRepository | null = null;
-  private repository: Repository<WebAuthnStepUpToken>;
+  private _repository: Repository<WebAuthnStepUpToken> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(WebAuthnStepUpToken);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<WebAuthnStepUpToken> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(WebAuthnStepUpToken);
+    }
+    return this._repository;
   }
 
   public static getInstance(): WebAuthnStepUpTokenRepository {

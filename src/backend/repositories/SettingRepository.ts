@@ -4,10 +4,16 @@ import { AppDataSource } from "../datasource";
 
 class SettingRepository {
   private static instance: SettingRepository | null = null;
-  private repository: Repository<Setting>;
+  private _repository: Repository<Setting> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(Setting);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<Setting> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Setting);
+    }
+    return this._repository;
   }
 
   public static getInstance(): SettingRepository {

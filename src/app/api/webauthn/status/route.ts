@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withRateLimit } from "@/lib/api-middleware";
 import { getSessionEmployee } from "@/lib/auth/session";
-import { AppDataSource } from "@/backend/datasource";
+import { waitForDb, AppDataSource } from "@/backend/datasource";
 import { WebAuthnCredential } from "@/backend/models/WebAuthnCredential";
 
 /**
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  await waitForDb();
   const repo = AppDataSource.getRepository(WebAuthnCredential);
   const credential = await repo.findOne({
     where: { employeeId: session.id },

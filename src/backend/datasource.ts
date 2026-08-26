@@ -16,7 +16,6 @@ class Database {
   private static instance: Database | null = null;
   private dataSource: DataSource;
   private initPromise: Promise<void> | null = null;
-  private initFailed = false;
 
   private constructor() {
     this.dataSource = new DataSource({
@@ -51,25 +50,46 @@ class Database {
   }
 
   public getDataSource(): DataSource {
+    if (!this.dataSource.isInitialized) {
+      throw new Error(
+        "DataSource not initialized — call waitForDb() before using repositories"
+      );
+    }
     return this.dataSource;
   }
 
   public async initialize(): Promise<void> {
     if (this.dataSource.isInitialized) {
-      this.initFailed = false;
       return;
     }
     await this.dataSource.initialize();
   }
 
+  /**
+   * Thread-safe initialization. Multiple concurrent callers share the same
+   * promise so only one `dataSource.initialize()` ever runs. If it fails,
+   * the next call retries from scratch (new promise).
+   */
   public async waitForInit(): Promise<void> {
-    // If previous init failed or never started, retry
-    if (this.initFailed || !this.initPromise) {
-      this.initPromise = this.initialize().catch((err) => {
-        this.initFailed = true;
-        throw err;
-      });
+    if (this.dataSource.isInitialized) {
+      return;
     }
+
+    if (this.initPromise) {
+      try {
+        await this.initPromise;
+        return;
+      } catch {
+        // Previous init failed — fall through to retry
+        this.initPromise = null;
+      }
+    }
+
+    this.initPromise = this.initialize().catch((err) => {
+      this.initPromise = null; // allow retry on next call
+      throw err;
+    });
+
     await this.initPromise;
   }
 }

@@ -12,6 +12,10 @@ jest.mock("next/headers", () => ({
   cookies: jest.fn(),
 }));
 
+jest.mock("@/backend/datasource", () => ({
+  waitForDb: jest.fn().mockResolvedValue(undefined),
+}));
+
 jest.mock("@/backend/repositories/EmployeeRepository", () => ({
   employeeRepository: {
     findByAuthUserId: jest.fn(),

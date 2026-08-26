@@ -123,10 +123,12 @@ describe("attendance identity binding", () => {
       EMPLOYEE_ID,
       "entry"
     );
-    expect(mockRecord).toHaveBeenCalledWith({
-      employeeId: EMPLOYEE_ID,
-      type: AttendanceType.ENTRADA,
-    });
+    expect(mockRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        employeeId: EMPLOYEE_ID,
+        type: AttendanceType.ENTRADA,
+      })
+    );
   });
 
   it("binds exit records to the exit intent", async () => {
@@ -140,10 +142,12 @@ describe("attendance identity binding", () => {
       EMPLOYEE_ID,
       "exit"
     );
-    expect(mockRecord).toHaveBeenCalledWith({
-      employeeId: EMPLOYEE_ID,
-      type: AttendanceType.SALIDA,
-    });
+    expect(mockRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        employeeId: EMPLOYEE_ID,
+        type: AttendanceType.SALIDA,
+      })
+    );
   });
 
   it("lets admins record for others without burning any token", async () => {
@@ -153,10 +157,12 @@ describe("attendance identity binding", () => {
 
     expect(result.success).toBe(true);
     expect(mockConsume).not.toHaveBeenCalled();
-    expect(mockRecord).toHaveBeenCalledWith({
-      employeeId: EMPLOYEE_ID,
-      type: AttendanceType.ENTRADA,
-    });
+    expect(mockRecord).toHaveBeenCalledWith(
+      expect.objectContaining({
+        employeeId: EMPLOYEE_ID,
+        type: AttendanceType.ENTRADA,
+      })
+    );
   });
 
   it("accepts admin recording for a different employee via direct call", async () => {

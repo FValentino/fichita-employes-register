@@ -15,6 +15,12 @@ jest.mock("@/backend/repositories/WebAuthnStepUpTokenRepository", () => ({
 jest.mock("@/backend/services/AuditLogService", () => ({
   auditLogService: { log: jest.fn().mockResolvedValue(undefined) },
 }));
+jest.mock("@/backend/services/SettingService", () => ({
+  settingService: {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+  },
+}));
 
 import { createClient } from "@supabase/supabase-js";
 import { verifyStepUpPassword } from "@/actions/webauthnActions";
@@ -84,6 +90,12 @@ describe("verifyStepUpPassword", () => {
     mockGetSessionEmployee.mockResolvedValue(
       sessionFor("cccc3333-3333-4333-8333-333333333333", "caro@fichita.com")
     );
+
+    // Simulate settingService persistence: store lockout state in-memory
+    const settingStore = new Map<string, string>();
+    const settingService = require("@/backend/services/SettingService").settingService;
+    settingService.get.mockImplementation(async (key: string) => settingStore.get(key) ?? null);
+    settingService.set.mockImplementation(async (key: string, value: string) => { settingStore.set(key, value); });
 
     for (let i = 0; i < 5; i++) {
       const result = await verifyStepUpPassword("still-wrong", "entry");

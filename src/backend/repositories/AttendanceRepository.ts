@@ -30,10 +30,16 @@ export interface PaginatedResult<T> {
 
 class AttendanceRepository {
   private static instance: AttendanceRepository | null = null;
-  private repository: Repository<Attendance>;
+  private _repository: Repository<Attendance> | null = null;
 
-  private constructor() {
-    this.repository = AppDataSource.getRepository(Attendance);
+  private constructor() {}
+
+  /** Lazy — resolves the TypeORM repository only after DataSource is initialized. */
+  private get repository(): Repository<Attendance> {
+    if (!this._repository) {
+      this._repository = AppDataSource.getRepository(Attendance);
+    }
+    return this._repository;
   }
 
   public static getInstance(): AttendanceRepository {

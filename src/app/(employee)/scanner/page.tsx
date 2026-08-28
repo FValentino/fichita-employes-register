@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseClient } from "@/lib/supabase";
-import { recordEntry, recordExit, getEmployeeTodayAttendances, getEmployeeByAuthUserId } from "@/actions";
+import { recordEntry, recordExit, getEmployeeByAuthUserId } from "@/actions";
 import { BiometricGate } from "@/features/biometric-verification";
 import { useFingerprint } from "@/hooks/useFingerprint";
 import { HiCamera, HiCheckCircle, HiArrowLeft } from "react-icons/hi2";
@@ -36,19 +36,6 @@ export default function ScannerPage() {
   const router = useRouter();
   const fingerprint = useFingerprint();
 
-  const checkStatus = async (id: string) => {
-    const result = await getEmployeeTodayAttendances(id);
-    if (result.success && result.data) {
-      const lastRecord = result.data[result.data.length - 1];
-      if (lastRecord?.type === "ENTRADA") {
-        setLastType("ENTRADA");
-      } else {
-        setLastType("SALIDA");
-      }
-    }
-    setStatus("ready");
-  };
-
   useEffect(() => {
     const supabase = createSupabaseClient();
     supabase.auth.getUser().then(async ({ data }) => {
@@ -60,7 +47,15 @@ export default function ScannerPage() {
           // Admins bypass the biometric gate (REQ-ADM-3); the server
           // re-resolves the role on every mutation regardless.
           setIsAdmin(result.data.role === "admin");
-          checkStatus(result.data.id);
+          // Use isWorking from the employee record instead of computing
+          // from today's attendances. The isWorking flag is updated by
+          // AttendanceService.record() on every entry/exit and is always
+          // in sync with the last attendance record across all days.
+          // Computing from today's attendances breaks when the employee
+          // has an open entry from a previous day (getEmployeeTodayAttendances
+          // returns empty → lastType defaults to "SALIDA" → exit button disabled).
+          setLastType(result.data.isWorking ? "ENTRADA" : "SALIDA");
+          setStatus("ready");
         } else {
           router.push("/login");
         }

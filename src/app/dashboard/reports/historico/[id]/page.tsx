@@ -34,6 +34,10 @@ function formatMinutes(minutes: number): string {
   return `${hours}h ${mins}min`;
 }
 
+function formatPago(minutes: number, hourlyRate: number): string {
+  return `$${((minutes / 60) * hourlyRate).toFixed(2)} ARS`;
+}
+
 function getUniqueWorkDays(turns: Turno[]): number {
   const days = new Set<string>();
   turns.forEach((turn) => {
@@ -218,12 +222,13 @@ const empId = employeeIdParam;
               <th style={thStyleHeader}>Entrada</th>
               <th style={thStyleHeader}>Salida</th>
               <th style={thStyleHeader}>Duración</th>
+              <th style={thStyleHeader}>Pago</th>
             </tr>
           </thead>
           <tbody>
             {turns.length === 0 ? (
               <tr>
-                <td colSpan={4} style={{ padding: 24, textAlign: "center", color: "#666" }}>
+                <td colSpan={5} style={{ padding: 24, textAlign: "center", color: "#666" }}>
                   No hay registros en este período
                 </td>
               </tr>
@@ -247,6 +252,9 @@ const empId = employeeIdParam;
                     </td>
                     <td style={tdStyleCenter}>
                       {turn.isOpen ? "Abierto" : formatMinutes(minutes)}
+                    </td>
+                    <td style={tdStyleCenter}>
+                      {turn.isOpen || (!turn.entryTime && !turn.exitTime) ? "-" : formatPago(minutes, employee.hourlyRate)}
                     </td>
                   </tr>
                 );

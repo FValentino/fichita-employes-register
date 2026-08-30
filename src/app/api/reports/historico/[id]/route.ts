@@ -17,6 +17,10 @@ function formatMinutes(minutes: number): string {
   return `${hours}h ${mins}min`;
 }
 
+function formatPago(minutes: number, hourlyRate: number): string {
+  return `$${((minutes / 60) * hourlyRate).toFixed(2)} ARS`;
+}
+
 function getUniqueWorkDays(turns: any[]): number {
   const days = new Set<string>();
   turns.forEach((turn: any) => {
@@ -130,6 +134,7 @@ await waitForDb();
     doc.text("Entrada", 65, headerY);
     doc.text("Salida", 105, headerY);
     doc.text("Duración", 145, headerY);
+    doc.text("Pago", 175, headerY);
 
     doc.setFont("helvetica", "normal");
     let y = headerY + 12;
@@ -154,6 +159,7 @@ await waitForDb();
         doc.text(formatTime(turn.entryTime), 65, y);
         doc.text(formatTime(turn.exitTime), 105, y);
         doc.text(turn.isOpen ? "Abierto" : formatMinutes(minutes), 145, y);
+        doc.text(turn.isOpen || (!turn.entryTime && !turn.exitTime) ? "-" : formatPago(minutes, employee.hourlyRate), 175, y);
         
         y += 10;
 

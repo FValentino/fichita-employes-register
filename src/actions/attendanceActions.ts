@@ -603,9 +603,9 @@ export async function getPayweekTurns(employeeId: string): Promise<{ success: bo
     const thisMonday = new Date(today);
     thisMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
     
-    // Inicio: lunes anterior 10:00
+    // Inicio: lunes anterior 08:00
     const start = new Date(lastMonday);
-    start.setHours(10, 0, 0, 0);
+    start.setHours(8, 0, 0, 0);
     
     // Fin: lunes actual 7:00
     const end = new Date(thisMonday);

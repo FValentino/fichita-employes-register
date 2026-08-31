@@ -15,6 +15,37 @@ interface AttendanceRecord {
   createdAt: Date;
 }
 
+type WeekView = "current" | "payweek";
+
+function getWeekRange(view: WeekView): { start: Date; end: Date; label: string } {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+
+  if (view === "current") {
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return { start: monday, end: sunday, label: "Semana actual" };
+  }
+
+  // Payweek: previous Monday 08:00 → current Monday 07:00
+  const lastMonday = new Date(now);
+  lastMonday.setDate(now.getDate() - mondayOffset - 7);
+  const thisMonday = new Date(now);
+  thisMonday.setDate(now.getDate() - mondayOffset);
+
+  const start = new Date(lastMonday);
+  start.setHours(8, 0, 0, 0);
+  const end = new Date(thisMonday);
+  end.setHours(7, 0, 0, 0);
+
+  return { start, end, label: "Semana de pago" };
+}
+
 export default function AttendanceDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -26,10 +57,11 @@ export default function AttendanceDetailPage() {
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   const [saving, setSaving] = useState(false);
+  const [weekView, setWeekView] = useState<WeekView>("current");
 
   useEffect(() => {
     fetchData();
-  }, [employeeId]);
+  }, [employeeId, weekView]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -39,19 +71,11 @@ export default function AttendanceDetailPage() {
     ]);
 
     if (attResult.success && attResult.data) {
-      // Filter to current week
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const monday = new Date(now);
-      monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
+      const { start, end } = getWeekRange(weekView);
 
       const weekAttendances = attResult.data.filter((a) => {
         const ts = new Date(a.timestamp);
-        return ts >= monday && ts <= sunday;
+        return ts >= start && ts <= end;
       });
 
       // Sort by timestamp descending
@@ -166,6 +190,14 @@ export default function AttendanceDetailPage() {
     return (totalMinutes / 60).toFixed(1);
   };
 
+  const weekRange = getWeekRange(weekView);
+
+  const formatDateRange = (start: Date, end: Date) => {
+    const fmt = (d: Date) =>
+      d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  };
+
   if (loading) {
     return (
       <div className="p-4">
@@ -186,9 +218,26 @@ export default function AttendanceDetailPage() {
         <div>
           <PageTitle>Asistencia — {employeeName}</PageTitle>
           <p className="text-sm text-gray-500 m-0 mt-1">
-            Semana actual • {calculateTotalHours()} horas totales
+            {weekRange.label} • {formatDateRange(weekRange.start, weekRange.end)} • {calculateTotalHours()} horas totales
           </p>
         </div>
+      </div>
+
+      {/* Week selector tabs */}
+      <div className="flex gap-2 mb-6">
+        {(["current", "payweek"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setWeekView(v)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              weekView === v
+                ? "bg-amber-500 text-neutral-900"
+                : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {v === "current" ? "Semana actual" : "Semana de pago"}
+          </button>
+        ))}
       </div>
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -205,7 +254,7 @@ export default function AttendanceDetailPage() {
             {attendances.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-12 text-center text-gray-500">
-                  No hay registros esta semana
+                  No hay registros en {weekRange.label.toLowerCase()}
                 </td>
               </tr>
             ) : (
